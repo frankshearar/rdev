@@ -1,9 +1,9 @@
 require 'rake'
-require 'spec/rake/spectask'
+require 'rspec/core/rake_task'
 require 'rake/clean'
 
 desc "Run all unit tests"
-Spec::Rake::specTask.new('tests') { |t|
-  t.spec_opts = ["-cfs"]
-  t.spec_files = FileList['spec/**/*.rb'].sort
+RSpec::Core::RakeTask.new('specs') { |t|
+  t.rspec_opts = ["-cfs"]
+  t.pattern = FileList['spec/**/*.rb'].sort
 }
