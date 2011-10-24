@@ -1,4 +1,4 @@
-require '/home/frank/Documents/rdev/src/parser.rb'
+require_relative '../src/parser.rb'
 
 module DerParser
   describe "DerivativeParser" do
@@ -32,6 +32,10 @@ module DerParser
     #   DerivativeParser.new.token('foo').parse('foo').should == ??
     # end
 
+
+  end
+
+  describe "Derivatives" do
     it "D_c(0) == 0" do
       DerivativeParser.empty.derivative('a').should be_empty
     end
