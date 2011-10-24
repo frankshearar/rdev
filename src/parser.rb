@@ -65,8 +65,8 @@ module DerParser
       false
     end
 
-    def token(predicate, tokenClass)
-      TokenParser.new(predicate, tokenClass)
+    def token(predicate, token_class)
+      TokenParser.new(predicate, token_class)
     end
 
     def derivative(input_token)
@@ -75,16 +75,16 @@ module DerParser
   end
 
   class UnionParser
-    def initialize(leftParser, rightParser)
-      @leftParser = leftParser
-      @rightParser = rigtParser
+    def initialize(left_parser, right_parser)
+      @left_parser = left_parser
+      @right_parser = right_parser
     end
   end
 
   class SequenceParser
-    def initialize(firstParser, secondParser)
-      @firstParser = firstParser
-      @secondParser = secondParser
+    def initialize(first_parser, second_parser)
+      @first_parser = first_parser
+      @second_parser = second_parser
     end
   end
 end
