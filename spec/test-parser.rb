@@ -35,6 +35,87 @@ module DerParser
 
   end
 
+  describe "Equality" do
+    it "empty parsers should be ==" do
+      EmptyParser.new.should == EmptyParser.new
+    end
+
+    it "empty parsers and eps parsers should not be ==" do
+      empty = EmptyParser.new
+      eps = EpsilonParser.new
+
+      empty.should_not == eps
+      eps.should_not == empty
+    end
+
+    it "eps parsers should be ==" do
+      EpsilonParser.new.should == EpsilonParser.new
+    end
+
+    it "token parsers should be == when they consume == tokens" do
+      TokenParser.new('foo', :lit).should == TokenParser.new('foo', :lit)
+    end
+
+    it "token parsers should not be == when they consume == tokens" do
+      TokenParser.new('foo', :lit).should == TokenParser.new('bar', :lit)
+      TokenParser.new('foo', :lit).should == TokenParser.new('foo', :literal)
+    end
+
+    it "union parsers should be == when their parts are ==" do
+      a = UnionParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      b = UnionParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+
+      a.should == b
+      b.should == a
+    end
+
+    it "union parsers should not be == to empty" do
+      u = UnionParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      u.should_not == DerivativeParser.empty
+      DerivativeParser.empty.should_not == u
+    end
+
+    it "union parsers should not be == to eps" do
+      u = UnionParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      u.should_not == DerivativeParser.eps
+      DerivativeParser.eps.should_not == u
+    end
+
+    it "union parsers should not be == to token parsers" do
+      u = UnionParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      t = TokenParser.new('foo', :lit)
+      u.should_not == t
+      t.should_not == u
+    end
+
+    it "sequence parsers should be == when their parts are ==" do
+      a = SequenceParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      b = SequenceParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+
+      a.should == b
+      b.should == a
+    end
+
+    it "sequence parsers should not be == to empty" do
+      u = SequenceParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      u.should_not == DerivativeParser.empty
+      DerivativeParser.empty.should_not == u
+    end
+
+    it "sequence parsers should not be == to eps" do
+      u = SequenceParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      u.should_not == DerivativeParser.eps
+      DerivativeParser.eps.should_not == u
+    end
+
+    it "sequence parsers should not be == to token parsers" do
+      u = SequenceParser.new(DerivativeParser.empty, TokenParser.new('foo', :lit))
+      t = TokenParser.new('foo', :lit)
+      u.should_not == t
+      t.should_not == u
+    end
+  end
+
   describe "Derivatives" do
     it "D_c(0) == 0" do
       DerivativeParser.empty.derivative('a').should be_empty
