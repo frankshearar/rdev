@@ -67,6 +67,10 @@ module DerParser
       @@EPS
     end
 
+    def self.token(predicate, token_class)
+      TokenParser.new(predicate, token_class)
+    end
+
     def empty
       self.empty
     end
@@ -111,10 +115,6 @@ module DerParser
           nullable?(x.parser) # ReductionParser
         end
       }
-    end
-
-    def token(predicate, token_class)
-      TokenParser.new(predicate, token_class)
     end
 
     def union(alternate_parser)

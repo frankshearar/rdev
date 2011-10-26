@@ -16,7 +16,7 @@ module DerParser
 
     it "other parsers should not be marked as empty" do
       Parser.eps.should_not be_empty
-      Parser.new.token('foo', :lit).should_not be_empty
+      Parser.token('foo', :lit).should_not be_empty
     end
 
     it "eps parser should be marked as such" do
@@ -25,11 +25,11 @@ module DerParser
 
     it "other parsers should not be marked as eps" do
       Parser.empty.should_not be_eps
-      Parser.new.token('foo', :lit).should_not be_eps
+      Parser.token('foo', :lit).should_not be_eps
     end
 
     # it "token should return a parser that can consume a single token" do
-    #   Parser.new.token('foo').parse('foo').should == ??
+    #   Parser.token('foo').parse('foo').should == ??
     # end
   end
 
@@ -43,7 +43,7 @@ module DerParser
     end
 
     it "token produces a token parser" do
-      Parser.empty.token('foo', :lit).should be_token_parser
+      Parser.token('foo', :lit).should be_token_parser
     end
   end
 
@@ -138,28 +138,28 @@ module DerParser
     end
 
     it "D_c(c) == eps" do
-      Parser.new.token('f', :lit).derivative('f').should be_eps
+      Parser.token('f', :lit).derivative('f').should be_eps
     end
 
     it "D_c(c') == empty if c != c'" do
-      Parser.new.token('a', :lit).derivative('b').should be_empty
+      Parser.token('a', :lit).derivative('b').should be_empty
     end
 
     # it "D_c(A union 0) == D_c(A)" do
     #   # D_c(A union 0) == D_c(A)
-    #   token_parser = DerivateParser.new.token('foo', :lit)
+    #   token_parser = DerivateParser.token('foo', :lit)
     #   derivative = token_parser.union(Parser.empty).derivative('a')
     #   derivative.should == token_parser.derivative
     # end
 
     # it "D_c(0 union A) == D_c(A)" do
-    #   token_parser = DerivateParser.new.token('foo', :lit)
+    #   token_parser = DerivateParser.token('foo', :lit)
     #   derivative = Parser.empty.union(token_parser).derivative('a')
     #   derivative.should == token_parser.derivative
     # end
 
     # it "D_c(0 union 0) == 0" do
-    #   token_parser = DerivateParser.new.token('foo', :lit)
+    #   token_parser = DerivateParser.token('foo', :lit)
     #   derivative = Parser.empty.union(Parser.empty).derivative('a')
     #   derivative.should be_empty
     # end
@@ -173,14 +173,14 @@ module DerParser
     # end
 
     # it "D_c(Nullable then B) == (D_c(Nullable) then B) union D_c(B)" do
-    #   b = Parser.new.token('bar', :lit)
-    #   nullable = Parser.new.token('foo', :lit).union(Parser.empty)
+    #   b = Parser.token('bar', :lit)
+    #   nullable = Parser.token('foo', :lit).union(Parser.empty)
     #   language = a.then(b)
     #   language.derivative('a').should == nullable.derivative('a').then(b)
     # end
 
     # it "D_c(A not) == D_c(A) not" do
-    #   token_parser = DerivateParser.new.token('foo', :lit)
+    #   token_parser = DerivateParser.token('foo', :lit)
     #   token_parser.not.derivative('a').should == token_parser.derivative('a').not
     # end
   end
@@ -195,7 +195,7 @@ module DerParser
     end
     
     it "token parser is not nullable" do
-      Parser.new.token('foo', :lit).nullable?.should be_false
+      Parser.token('foo', :lit).nullable?.should be_false
     end
 
     it "union parser of non-nullable parsers is not nullable" do
