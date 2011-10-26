@@ -1,7 +1,7 @@
 require_relative '../src/parser.rb'
 
 module DerParser
-  describe "DerivativeParser" do
+  describe "DerivativeParser:" do
     it "empty should be a flyweight" do
       DerivativeParser.empty.should == DerivativeParser.empty
     end
@@ -31,11 +31,23 @@ module DerParser
     # it "token should return a parser that can consume a single token" do
     #   DerivativeParser.new.token('foo').parse('foo').should == ??
     # end
-
-
   end
 
-  describe "Equality" do
+  describe "Composition:" do
+    it "then produces a sequence parser" do
+      DerivativeParser.empty.then(DerivativeParser.empty).should be_sequence
+    end
+
+    it "union produces a union parser" do
+      DerivativeParser.empty.union(DerivativeParser.empty).should be_union
+    end
+
+    it "token produces a token parser" do
+      DerivativeParser.empty.token('foo', :lit).should be_token_parser
+    end
+  end
+
+  describe "Equality:" do
     it "empty parsers should be ==" do
       EmptyParser.new.should == EmptyParser.new
     end
@@ -116,7 +128,7 @@ module DerParser
     end
   end
 
-  describe "Derivatives" do
+  describe "Derivatives:" do
     it "D_c(0) == 0" do
       DerivativeParser.empty.derivative('a').should be_empty
     end
@@ -171,5 +183,51 @@ module DerParser
     #   token_parser = DerivateParser.new.token('foo', :lit)
     #   token_parser.not.derivative('a').should == token_parser.derivative('a').not
     # end
+  end
+
+  describe "Nullability:" do
+    it "empty parser is not nullable" do
+      DerivativeParser.empty.nullable?.should be_false
+    end
+
+    it "eps parser is nullable" do
+      DerivativeParser.eps.nullable?.should be_true
+    end
+    
+    it "token parser is not nullable" do
+      DerivativeParser.new.token('foo', :lit).nullable?.should be_false
+    end
+
+    it "union parser of non-nullable parsers is not nullable" do
+      DerivativeParser.empty.union(DerivativeParser.empty).nullable?.should be_false
+    end
+
+    it "union of nullable parser with non-nullable parser is nullable" do
+      DerivativeParser.eps.union(DerivativeParser.empty).nullable?.should be_true
+    end
+
+    it "union of non-nullable parser with nullable parser is nullable" do
+      DerivativeParser.empty.union(DerivativeParser.eps).nullable?.should be_true
+    end
+
+    it "union of two nullable parsers is nullable" do
+      DerivativeParser.eps.union(DerivativeParser.eps).nullable?.should be_true
+    end
+
+    it "two non-nullable parsers in sequence is not nullable" do
+      DerivativeParser.empty.then(DerivativeParser.empty).nullable?.should be_false
+    end
+
+    it "two nullable parsers in sequence is nullable" do
+      DerivativeParser.eps.then(DerivativeParser.eps).nullable?.should be_true
+    end
+
+    it "nullable parser followed by non-nullable parser is not nullable" do
+      DerivativeParser.eps.then(DerivativeParser.empty).nullable?.should be_false
+    end
+
+    it "non-nullable parser followed by nullable parser is not nullable" do
+      DerivativeParser.eps.then(DerivativeParser.empty).nullable?.should be_false
+    end
   end
 end

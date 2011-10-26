@@ -1,3 +1,5 @@
+require_relative 'fixed-point'
+
 module DerParser
 
   class DerivativeParser
@@ -93,8 +95,34 @@ module DerParser
       false
     end
 
+    def nullable?(parser = self)
+      Fix::LeastFixedPoint.run(parser, false) { |x|
+        if x.empty?
+          false
+        elsif x.eps?
+          true
+        elsif x.token_parser?
+          false
+        elsif x.union?
+          nullable?(x.left_parser) or nullable?(x.right_parser)
+        elsif x.sequence?
+          nullable?(x.first_parser) and nullable?(x.second_parser)
+        else
+          nullable?(x.parser) # ReductionParser
+        end
+      }
+    end
+
     def token(predicate, token_class)
       TokenParser.new(predicate, token_class)
+    end
+
+    def union(alternate_parser)
+      UnionParser.new(self, alternate_parser)
+    end
+
+    def then(following_parser)
+      SequenceParser.new(self, following_parser)
     end
 
     def derivative(input_token)
@@ -138,6 +166,13 @@ module DerParser
       return false unless obj.sequence?
 
       (first_parser == obj.first_parser) and (second_parser == obj.second_parser)
+    end
+  end
+
+  class ReductionParser
+    def initialize(parser, reduction_function)
+      @parser = parser
+      @reduction_function = reduction_function
     end
   end
 end
