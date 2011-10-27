@@ -8,10 +8,10 @@ module DerParser
 
   class EmptyParser < Parser
     def ==(obj)
-      obj.empty?
+      obj.empty_parser?
     end
 
-    def empty?
+    def empty_parser?
       true
     end
 
@@ -79,7 +79,7 @@ module DerParser
       self.eps
     end
 
-    def empty?
+    def empty_parser?
       false
     end
 
@@ -99,9 +99,45 @@ module DerParser
       false
     end
 
+    def empty?(parser = self)
+      Fix::LeastFixedPoint.run(parser, false) { |x|
+        if x.empty_parser?
+          true
+        elsif x.eps?
+          false
+        elsif x.token_parser?
+          false
+        elsif x.union?
+          empty?(x.left_parser) and empty?(x.right_parser)
+        elsif x.sequence?
+          empty?(x.first_parser) or empty?(x.second_parser)
+        else
+          empty?(x.parser)
+        end
+      }
+    end
+
+    def null?(parser = self)
+      Fix::LeastFixedPoint.run(parser, false) { |x|
+        if x.empty_parser?
+          false
+        elsif x.eps?
+          true
+        elsif x.token_parser?
+          false
+        elsif x.union?
+          null?(x.left_parser) and null?(x.right_parser)
+        elsif x.sequence?
+          null?(x.first_parser) and null?(x.second_parser)
+        else
+          null?(x.parser) # ReductionParser
+        end
+      }
+    end
+
     def nullable?(parser = self)
       Fix::LeastFixedPoint.run(parser, false) { |x|
-        if x.empty?
+        if x.empty_parser?
           false
         elsif x.eps?
           true
@@ -115,6 +151,10 @@ module DerParser
           nullable?(x.parser) # ReductionParser
         end
       }
+    end
+
+    def or(alternate_parser)
+      union(alternate_parser)
     end
 
     def union(alternate_parser)
@@ -169,7 +209,7 @@ module DerParser
     end
   end
 
-  class ReductionParser
+  class ReductionParser < Parser
     def initialize(parser, reduction_function)
       @parser = parser
       @reduction_function = reduction_function

@@ -1,7 +1,7 @@
 require_relative '../src/parser.rb'
 
 module DerParser
-  describe "Parser:" do
+  describe "Parser" do
     it "empty should be a flyweight" do
       Parser.empty.should == Parser.empty
     end
@@ -11,12 +11,12 @@ module DerParser
     end
 
     it "empty parser should be marked as such" do
-      Parser.empty.should be_empty
+      Parser.empty.should be_empty_parser
     end
 
     it "other parsers should not be marked as empty" do
-      Parser.eps.should_not be_empty
-      Parser.token('foo', :lit).should_not be_empty
+      Parser.eps.should_not be_empty_parser
+      Parser.token('foo', :lit).should_not be_empty_parser
     end
 
     it "eps parser should be marked as such" do
@@ -33,9 +33,13 @@ module DerParser
     # end
   end
 
-  describe "Composition:" do
+  describe "Composition" do
     it "then produces a sequence parser" do
       Parser.empty.then(Parser.empty).should be_sequence
+    end
+
+    it "or produces a union parser" do
+      Parser.empty.or(Parser.empty).should be_union
     end
 
     it "union produces a union parser" do
@@ -47,7 +51,7 @@ module DerParser
     end
   end
 
-  describe "Equality:" do
+  describe "Equality" do
     it "empty parsers should be ==" do
       EmptyParser.new.should == EmptyParser.new
     end
@@ -128,13 +132,13 @@ module DerParser
     end
   end
 
-  describe "Derivatives:" do
+  describe "Derivatives" do
     it "D_c(0) == 0" do
-      Parser.empty.derivative('a').should be_empty
+      Parser.empty.derivative('a').should be_empty_parser
     end
 
     it "D_c(eps) == 0" do
-      Parser.eps.derivative('a').should be_empty
+      Parser.eps.derivative('a').should be_empty_parser
     end
 
     it "D_c(c) == eps" do
@@ -142,7 +146,7 @@ module DerParser
     end
 
     it "D_c(c') == empty if c != c'" do
-      Parser.token('a', :lit).derivative('b').should be_empty
+      Parser.token('a', :lit).derivative('b').should be_empty_parser
     end
 
     # it "D_c(A union 0) == D_c(A)" do
@@ -161,7 +165,7 @@ module DerParser
     # it "D_c(0 union 0) == 0" do
     #   token_parser = DerivateParser.token('foo', :lit)
     #   derivative = Parser.empty.union(Parser.empty).derivative('a')
-    #   derivative.should be_empty
+    #   derivative.should be_empty_parser
     # end
 
     # it "D_c(A union B) == D_c(A) union D_c(B)" do
@@ -185,7 +189,7 @@ module DerParser
     # end
   end
 
-  describe "Nullability:" do
+  describe "Is the language accepted by this parser the empty string?" do
     it "empty parser is not nullable" do
       Parser.empty.nullable?.should be_false
     end
@@ -228,6 +232,75 @@ module DerParser
 
     it "non-nullable parser followed by nullable parser is not nullable" do
       Parser.eps.then(Parser.empty).nullable?.should be_false
+    end
+
+    it "eps is the null parser" do
+      Parser.eps.null?.should be_true
+    end
+
+    it "empty is not the null parser" do
+      Parser.empty.null?.should be_false
+    end
+
+    it "a token parser is not the null parser" do
+      Parser.token('foo', :lit).null?.should be_false
+    end
+
+    it "eps or eps is the null parser" do
+      Parser.eps.or(Parser.eps).null?.should be_true
+    end
+
+    it "eps or any non-eps is not the null parser" do
+      Parser.eps.or(Parser.empty).null?.should be_false
+      Parser.empty.or(Parser.eps).null?.should be_false
+    end
+
+    it "non-eps or non-eps is not the null parser" do
+      Parser.empty.or(Parser.empty).null?.should be_false
+    end
+
+    it "nullability must work on recursive parsers" do
+      s = (s.then(Parser.token('(', :lp)).then(s).then(Parser.token(')', :rp))).or(s)
+    end
+  end
+
+  describe "Is the language accepted by this parser the empty set?" do
+    it "the empty parser accepts the empty set" do
+      Parser.empty.empty?.should be_true
+    end
+
+    it "the eps parser does not accept the empty set" do
+      Parser.eps.empty?.should be_false
+    end
+
+    it "a token parser does not accept the empty set" do
+      Parser.token('foo', :lit).empty?.should be_false
+    end
+
+    it "the union of two non-empty parsers does not accept the empty set" do
+      Parser.eps.or(Parser.eps).empty?.should be_false
+    end
+
+    it "the union of two non-empty parsers does accepts the empty set" do
+      Parser.empty.or(Parser.empty).empty?.should be_true
+    end
+
+    it "the union of a non-empty parser and an empty parser does not accept the empty set" do
+      Parser.eps.or(Parser.empty).empty?.should be_false
+      Parser.empty.or(Parser.eps).empty?.should be_false
+    end
+
+    it "the sequence of two non-empty parsers does not accept the empty set" do
+      Parser.empty.then(Parser.empty).empty?.should be_true
+    end
+
+    it "the sequence of two non-empty parsers does not accept the empty set" do
+      Parser.eps.then(Parser.eps).empty?.should be_false
+    end
+
+    it "the sequence of a non-empty parser and an empty parser accepts the empty set" do
+      Parser.eps.then(Parser.empty).empty?.should be_true
+      Parser.empty.then(Parser.eps).empty?.should be_true
     end
   end
 end
