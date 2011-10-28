@@ -284,6 +284,10 @@ module DerParser
       parser.sequence?
     end
 
+    def compact
+      parser.compact
+    end
+
     def derive(input_token)
       parser.derive(input_token)
     end

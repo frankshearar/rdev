@@ -93,6 +93,13 @@ module DerParser
       seq = Parser.eps.then(something)
       seq.compact.should == something.compact
     end
+
+    it "should compact a delegate parser as the parser to which it delegates" do
+      something = Parser.eps.then(Parser.literal('a'))
+      delegate = DelegateParser.new
+      delegate.parser = something
+      delegate.compact.should == something.compact
+    end
   end
 
   describe "Equality" do
