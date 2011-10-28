@@ -258,10 +258,6 @@ module DerParser
     it "non-eps or non-eps is not the null parser" do
       Parser.empty.or(Parser.empty).null?.should be_false
     end
-
-    it "nullability must work on recursive parsers" do
-      s = (s.then(Parser.token('(', :lp)).then(s).then(Parser.token(')', :rp))).or(s)
-    end
   end
 
   describe "Is the language accepted by this parser the empty set?" do
