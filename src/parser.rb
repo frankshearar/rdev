@@ -6,6 +6,7 @@ module DerParser
     # Forward declaration
   end
 
+  # The language that accepts the empty set.
   class EmptyParser < Parser
     def ==(obj)
       obj.empty_parser?
@@ -20,6 +21,7 @@ module DerParser
     end
   end
 
+  # The language that accepts the empty string.
   class EpsilonParser < Parser
     def ==(obj)
       obj.eps?
@@ -34,6 +36,8 @@ module DerParser
     end
   end
 
+  # The language that accepts input satisfying some predicate (i.e.,
+  # a unary block that returns a boolean).
   class TokenParser < Parser
     attr_reader :predicate
 
@@ -103,6 +107,7 @@ module DerParser
       false
     end
 
+    # Does parser accept the empty set?
     def empty?(parser = self)
       Fix::LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
@@ -121,24 +126,7 @@ module DerParser
       }
     end
 
-    def null?(parser = self)
-      Fix::LeastFixedPoint.run(parser, false) { |x|
-        if x.empty_parser?
-          false
-        elsif x.eps?
-          true
-        elsif x.token_parser?
-          false
-        elsif x.union?
-          null?(x.left_parser) and null?(x.right_parser)
-        elsif x.sequence?
-          null?(x.first_parser) and null?(x.second_parser)
-        else
-          null?(x.parser) # ReductionParser
-        end
-      }
-    end
-
+    # Does parser accept the empty string?
     def nullable?(parser = self)
       Fix::LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
