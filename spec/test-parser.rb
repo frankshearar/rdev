@@ -16,7 +16,7 @@ module DerParser
 
     it "other parsers should not be marked as empty" do
       Parser.eps.should_not be_empty_parser
-      Parser.token('foo', :lit).should_not be_empty_parser
+      Parser.literal('foo').should_not be_empty_parser
     end
 
     it "eps parser should be marked as such" do
@@ -25,12 +25,12 @@ module DerParser
 
     it "other parsers should not be marked as eps" do
       Parser.empty.should_not be_eps
-      Parser.token('foo', :lit).should_not be_eps
+      Parser.literal('foo').should_not be_eps
     end
 
-    # it "token should return a parser that can consume a single token" do
-    #   Parser.token('foo').parse('foo').should == ??
-    # end
+    it "token should return a parser that can consume a single token" do
+      Parser.literal('foo').should be_token_parser
+    end
   end
 
   describe "Composition" do
@@ -177,15 +177,15 @@ module DerParser
     # end
 
     # it "D_c(Nullable then B) == (D_c(Nullable) then B) union D_c(B)" do
-    #   b = Parser.token('bar', :lit)
-    #   nullable = Parser.token('foo', :lit).union(Parser.empty)
+    #   b = Parser.literal('bar')
+    #   nullable = Parser.literal('foo').union(Parser.empty)
     #   language = a.then(b)
-    #   language.derivative('a').should == nullable.derivative('a').then(b)
+    #   language.derive('a').should == nullable.derive('a').then(b)
     # end
 
     # it "D_c(A not) == D_c(A) not" do
-    #   token_parser = DerivateParser.token('foo', :lit)
-    #   token_parser.not.derivative('a').should == token_parser.derivative('a').not
+    #   token_parser = Parser.literal('foo')
+    #   token_parser.not.derive('a').should == token_parser.derive('a').not
     # end
   end
 
@@ -199,7 +199,7 @@ module DerParser
     end
     
     it "token parser is not nullable" do
-      Parser.token('foo', :lit).nullable?.should be_false
+      Parser.literal('foo').nullable?.should be_false
     end
 
     it "union parser of non-nullable parsers is not nullable" do
@@ -233,31 +233,6 @@ module DerParser
     it "non-nullable parser followed by nullable parser is not nullable" do
       Parser.eps.then(Parser.empty).nullable?.should be_false
     end
-
-    it "eps is the null parser" do
-      Parser.eps.null?.should be_true
-    end
-
-    it "empty is not the null parser" do
-      Parser.empty.null?.should be_false
-    end
-
-    it "a token parser is not the null parser" do
-      Parser.token('foo', :lit).null?.should be_false
-    end
-
-    it "eps or eps is the null parser" do
-      Parser.eps.or(Parser.eps).null?.should be_true
-    end
-
-    it "eps or any non-eps is not the null parser" do
-      Parser.eps.or(Parser.empty).null?.should be_false
-      Parser.empty.or(Parser.eps).null?.should be_false
-    end
-
-    it "non-eps or non-eps is not the null parser" do
-      Parser.empty.or(Parser.empty).null?.should be_false
-    end
   end
 
   describe "Is the language accepted by this parser the empty set?" do
@@ -270,7 +245,7 @@ module DerParser
     end
 
     it "a token parser does not accept the empty set" do
-      Parser.token('foo', :lit).empty?.should be_false
+      Parser.literal('foo').empty?.should be_false
     end
 
     it "the union of two non-empty parsers does not accept the empty set" do
