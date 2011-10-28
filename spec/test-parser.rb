@@ -46,8 +46,52 @@ module DerParser
       Parser.empty.union(Parser.empty).should be_union
     end
 
-    it "token produces a token parser" do
-      Parser.token('foo', :lit).should be_token_parser
+    it "literal produces a token parser" do
+      Parser.literal('foo').should be_token_parser
+    end
+  end
+
+  describe "Compaction" do
+    it "should compact the empty parser to itself" do
+      Parser.empty.compact.should == Parser.empty
+    end
+
+    it "should compact the epsilon parser to itself" do
+      Parser.eps.compact.should == Parser.eps
+    end
+
+    it "should compact a token parser to itself" do
+      lit = Parser.literal('a')
+      lit.compact.should == lit
+    end
+
+    it "should compact an empty union something parser to the something" do
+      something = Parser.literal('a').then(Parser.eps)
+      union = Parser.empty.union(something)
+      union.compact.should == something.compact
+    end
+
+    it "should compact a something union empty parser to the compaction of the something" do
+      something = Parser.literal('a').then(Parser.eps)
+      union = something.union(Parser.empty)
+      union.compact.should == something.compact
+    end
+
+    it "should compact an reduction of an empty language to the empty parser" do
+      red_empty = ReductionParser.new(UnionParser.new(Parser.empty, Parser.empty), ->x{x})
+      red_empty.compact.should == Parser.empty
+    end
+
+    it "should compact an eps then something to the compaction of the something" do
+      something = Parser.literal('a').then(Parser.eps)
+      seq = Parser.eps.then(something)
+      seq.compact.should == something.compact
+    end
+
+    it "should compact a something then eps to the compaction of the something" do
+      something = Parser.eps.then(Parser.literal('a'))
+      seq = Parser.eps.then(something)
+      seq.compact.should == something.compact
     end
   end
 
@@ -134,39 +178,37 @@ module DerParser
 
   describe "Derivatives" do
     it "D_c(0) == 0" do
-      Parser.empty.derivative('a').should be_empty_parser
+      Parser.empty.derive('a').should be_empty_parser
     end
 
     it "D_c(eps) == 0" do
-      Parser.eps.derivative('a').should be_empty_parser
+      Parser.eps.derive('a').should be_empty_parser
     end
 
     it "D_c(c) == eps" do
-      Parser.token('f', :lit).derivative('f').should be_eps
+      Parser.literal('f').derive('f').should be_eps
     end
 
     it "D_c(c') == empty if c != c'" do
-      Parser.token('a', :lit).derivative('b').should be_empty_parser
+      Parser.literal('a').derive('b').should be_empty_parser
     end
 
-    # it "D_c(A union 0) == D_c(A)" do
-    #   # D_c(A union 0) == D_c(A)
-    #   token_parser = DerivateParser.token('foo', :lit)
-    #   derivative = token_parser.union(Parser.empty).derivative('a')
-    #   derivative.should == token_parser.derivative
-    # end
+    it "D_c(A union 0) == D_c(A)" do
+      token_parser = Parser.literal('foo')
+      derivative = token_parser.union(Parser.empty).derive('a')
+      derivative.compact.should == token_parser.derive('a').compact
+    end
 
-    # it "D_c(0 union A) == D_c(A)" do
-    #   token_parser = DerivateParser.token('foo', :lit)
-    #   derivative = Parser.empty.union(token_parser).derivative('a')
-    #   derivative.should == token_parser.derivative
-    # end
+    it "D_c(0 union A) == D_c(A)" do
+      token_parser = Parser.literal('foo')
+      derivative = Parser.empty.union(token_parser).derive('a')
+      derivative.compact.should == token_parser.derive('a')
+    end
 
-    # it "D_c(0 union 0) == 0" do
-    #   token_parser = DerivateParser.token('foo', :lit)
-    #   derivative = Parser.empty.union(Parser.empty).derivative('a')
-    #   derivative.should be_empty_parser
-    # end
+    it "D_c(0 union 0) == 0" do
+      derivative = Parser.empty.union(Parser.empty).derive('a')
+      derivative.compact.should be_empty_parser
+    end
 
     # it "D_c(A union B) == D_c(A) union D_c(B)" do
     #   fail
@@ -274,4 +316,11 @@ module DerParser
       Parser.empty.then(Parser.eps).empty?.should be_true
     end
   end
+
+  # Need deriving before we can test parsing
+  # describe "Parsing" do
+  #   it "token parser should accept a token" do
+  #     fail "Not implemented yet"
+  #   end
+  # end
 end

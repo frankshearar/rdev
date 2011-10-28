@@ -16,6 +16,10 @@ module DerParser
       true
     end
 
+    def compact
+      self
+    end
+
     def derive(input_token)
       self
     end
@@ -29,6 +33,10 @@ module DerParser
 
     def eps?
       true
+    end
+
+    def compact
+      self
     end
 
     def derive(input_token)
@@ -51,6 +59,10 @@ module DerParser
 
     def token_parser?
       true
+    end
+
+    def compact
+      self
     end
 
     def derive(input_token)
@@ -157,6 +169,10 @@ module DerParser
       SequenceParser.new(self, following_parser)
     end
 
+    def compact
+      raise "Not implemented yet for #{self.class.name}"
+    end
+
     def derive(input_token)
       raise "Not implemented yet for #{self.class.name}"
     end
@@ -179,6 +195,22 @@ module DerParser
       return false unless obj.union?
       (left_parser == obj.left_parser) and (right_parser == obj.right_parser)
     end
+
+    def compact
+      if self.empty? then
+        Parser.empty
+      elsif left_parser.empty? then
+        right_parser.compact
+      elsif right_parser.empty? then
+        left_parser.compact
+      else
+        self
+      end
+    end
+
+    def derive(input_token)
+      left_parser.derive(input_token).or(right_parser.derive(input_token))
+    end
   end
 
   class SequenceParser < Parser
@@ -199,12 +231,61 @@ module DerParser
 
       (first_parser == obj.first_parser) and (second_parser == obj.second_parser)
     end
+
+    def compact
+      if self.nullable? then
+        Parser.empty
+      elsif first_parser.nullable? then
+        second_parser.compact
+      elsif second_parser.nullable? then
+        first_parser.compact
+      else
+        first_parser.compact.then(second_parser.compact)
+      end
+    end
   end
 
   class ReductionParser < Parser
     def initialize(parser, reduction_function)
       @parser = parser
       @reduction_function = reduction_function
+    end
+
+    def compact
+      if @parser.empty? then
+        Parser.empty
+      else
+        raise "Not implemented yet"
+      end
+    end
+  end
+
+  # A stand-in for a parser not yet defined. Handy for self-recursion.
+  class DelegateParser < Parser
+    attr_accessor :parser
+
+    def empty_parser?
+      parser.empty_parser?
+    end
+
+    def eps?
+      parser.eps?
+    end
+
+    def token_parser?
+      parser.token_parser?
+    end
+
+    def union?
+      parser.union?
+    end
+
+    def sequence?
+      parser.sequence?
+    end
+
+    def derive(input_token)
+      parser.derive(input_token)
     end
   end
 end
