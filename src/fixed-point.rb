@@ -105,11 +105,11 @@ module Fix
 
     def run(x, bottom, &unary_block)
       is_cached = cache.has_key?(x)
-      cached = cached_or_else(x, Proc.new {bottom})
+      cached = cached_or_else(x, ->{bottom})
       should_run = running?
       if (is_cached and not should_run) then
         cached
-      elsif (should_run and cached_or_else(@visited, x))
+      elsif (should_run and cached_or_else(visited, x))
         if is_cached then cached else bottom end
       elsif should_run
         visited[x] = true

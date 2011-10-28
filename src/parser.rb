@@ -15,7 +15,7 @@ module DerParser
       true
     end
 
-    def derivative(input_token)
+    def derive(input_token)
       self
     end
   end
@@ -29,16 +29,16 @@ module DerParser
       true
     end
 
-    def derivative(input_token)
+    def derive(input_token)
       Parser.empty
     end
   end
 
   class TokenParser < Parser
-    attr_reader :expected_token
+    attr_reader :predicate
 
-    def initialize(expected_token, tokenClass)
-      @expected_token = expected_token
+    def initialize(predicate, tokenClass)
+      @predicate = predicate
     end
 
     def ==(obj)
@@ -49,8 +49,8 @@ module DerParser
       true
     end
 
-    def derivative(input_token)
-      return Parser.eps if input_token == @expected_token
+    def derive(input_token)
+      return Parser.eps if @predicate.call(input_token)
       Parser.empty
     end
   end
@@ -67,7 +67,11 @@ module DerParser
       @@EPS
     end
 
-    def self.token(predicate, token_class)
+    def self.literal(literal)
+      token_matching(->x{x == literal}, :literal)
+    end
+
+    def self.token_matching(predicate, token_class)
       TokenParser.new(predicate, token_class)
     end
 
@@ -165,7 +169,7 @@ module DerParser
       SequenceParser.new(self, following_parser)
     end
 
-    def derivative(input_token)
+    def derive(input_token)
       raise "Not implemented yet for #{self.class.name}"
     end
   end
