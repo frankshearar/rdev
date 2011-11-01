@@ -52,11 +52,11 @@ module DerParser
   end
 
   describe "Compaction" do
-    it "should compact the empty parser to itself" do
+    it "should compact 0 to itself" do
       Parser.empty.compact.should == Parser.empty
     end
 
-    it "should compact the epsilon parser to itself" do
+    it "should compact eps to itself" do
       Parser.eps.compact.should == Parser.eps
     end
 
@@ -65,19 +65,42 @@ module DerParser
       lit.compact.should == lit
     end
 
-    it "should compact an empty union something parser to the something" do
-      something = Parser.literal('a').then(Parser.eps)
-      union = Parser.empty.union(something)
-      union.compact.should == something.compact
+    it "should compact a nullable grammar to 0" do
+      nullable = UnionParser.new(Parser.empty, Parser.empty)
+      nullable.compact.should == Parser.empty
     end
 
-    it "should compact a something union empty parser to the compaction of the something" do
-      something = Parser.literal('a').then(Parser.eps)
-      union = something.union(Parser.empty)
-      union.compact.should == something.compact
+    it "should compact 0 or A to A compact" do
+      a = Parser.literal('a').then(Parser.eps)
+      union = Parser.empty.union(a)
+      union.compact.should == a.compact
     end
 
-    it "should compact an reduction of an empty language to the empty parser" do
+    it "should compact A union 0 parser to A compact" do
+      a = Parser.literal('a').then(Parser.eps)
+      union = a.union(Parser.empty)
+      union.compact.should == a.compact
+    end
+
+    it "should compact A union B to A compact union B compact" do
+      a = Parser.literal('a').then(Parser.eps)
+      b = Parser.eps.then(Parser.literal('b'))
+      a.or(b).compact.should == a.compact.or(b.compact)
+    end
+
+    it "should compact A then B to A compact then B compact" do
+      a = Parser.literal('a').then(Parser.eps)
+      b = Parser.eps.then(Parser.literal('b'))
+
+      a.then(b).compact.should == a.compact.then(b.compact)
+    end
+
+    it "should compact a reduction of 0 to 0" do
+      red_empty = ReductionParser.new(Parser.empty, ->x{x})
+      red_empty.compact.should == Parser.empty
+    end
+
+    it "should compact a reduction of an empty language to 0" do
       red_empty = ReductionParser.new(UnionParser.new(Parser.empty, Parser.empty), ->x{x})
       red_empty.compact.should == Parser.empty
     end
@@ -88,10 +111,10 @@ module DerParser
       seq.compact.should == something.compact
     end
 
-    it "should compact a something then eps to the compaction of the something" do
-      something = Parser.eps.then(Parser.literal('a'))
-      seq = Parser.eps.then(something)
-      seq.compact.should == something.compact
+    it "should compact A then eps to A compact" do
+      a = Parser.eps.then(Parser.literal('a'))
+      seq = Parser.eps.then(a)
+      seq.compact.should == a.compact
     end
 
     it "should compact a delegate parser as the parser to which it delegates" do
@@ -99,6 +122,21 @@ module DerParser
       delegate = DelegateParser.new
       delegate.parser = something
       delegate.compact.should == something.compact
+    end
+
+    it "should compact a reduction parser's parser" do
+      something = Parser.eps.then(Parser.literal('a'))
+      reduction = ReductionParser.new(something, ->x{x})
+      reduction.compact.reducer?.should be_true
+      reduction.compact.parser.should == something.compact
+    end
+
+    it "should compact nested reductions as a composition of the reduction functions" do
+      a = Parser.eps.then(Parser.literal('a'))
+      inner = ReductionParser.new(a, ->x{x * 2})
+      outer = ReductionParser.new(inner, ->x{x + 1})
+      outer.compact.parser.should == a.compact
+      outer.compact.reduction_function.call(1).should == 3
     end
   end
 

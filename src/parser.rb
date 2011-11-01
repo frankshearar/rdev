@@ -107,6 +107,10 @@ module DerParser
       false
     end
 
+    def reducer?
+      false
+    end
+
     def token_parser?
       false
     end
@@ -204,7 +208,7 @@ module DerParser
       elsif right_parser.empty? then
         left_parser.compact
       else
-        self
+        left_parser.compact.or(right_parser.compact)
       end
     end
 
@@ -246,16 +250,26 @@ module DerParser
   end
 
   class ReductionParser < Parser
+    attr_reader :parser
+    attr_reader :reduction_function
+
     def initialize(parser, reduction_function)
       @parser = parser
       @reduction_function = reduction_function
     end
 
+    def reducer?
+      true
+    end
+
     def compact
-      if @parser.empty? then
+      if @parser.empty?
         Parser.empty
+      elsif @parser.reducer? then
+        ReductionParser.new(@parser.parser.compact,
+                            ->x{@reduction_function.call(@parser.reduction_function.call(x))})
       else
-        raise "Not implemented yet"
+        ReductionParser.new(@parser.compact, @reduction_function)
       end
     end
   end
