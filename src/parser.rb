@@ -276,6 +276,10 @@ module DerParser
         ReductionParser.new(@parser.compact, @reduction_function)
       end
     end
+
+    def derive(input_token)
+      @parser.derive(input_token)
+    end
   end
 
   # A stand-in for a parser not yet defined. Handy for self-recursion.

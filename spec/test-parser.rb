@@ -270,6 +270,13 @@ module DerParser
     #   language.derive('a').should == nullable.derive('a').then(b)
     # end
 
+    it "D_c(reduction(A)) == D_c(A)" do
+      a = Parser.literal('bar')
+      red = ReductionParser.new(a, ->x{x})
+      red.derive('a').should == a.derive('a')
+      red.derive('bar').should == a.derive('bar')
+    end
+
     # it "D_c(A not) == D_c(A) not" do
     #   token_parser = Parser.literal('foo')
     #   token_parser.not.derive('a').should == token_parser.derive('a').not
