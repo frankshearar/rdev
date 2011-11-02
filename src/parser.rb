@@ -136,8 +136,10 @@ module DerParser
           empty?(x.left_parser) and empty?(x.right_parser)
         elsif x.sequence?
           empty?(x.first_parser) or empty?(x.second_parser)
-        else
+        elsif x.reducer?
           empty?(x.parser)
+        else
+          raise "empty? not defined for #{parser.class.name}"
         end
       }
     end
@@ -155,8 +157,10 @@ module DerParser
           nullable?(x.left_parser) or nullable?(x.right_parser)
         elsif x.sequence?
           nullable?(x.first_parser) and nullable?(x.second_parser)
+        elsif x.reducer?
+          nullable?(x.parser)
         else
-          nullable?(x.parser) # ReductionParser
+          raise "nullable? not defined for #{parser.class.name}"
         end
       }
     end
