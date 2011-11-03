@@ -1,6 +1,6 @@
 require_relative '../src/fixed-point'
 
-module Fix
+module DerParser
   describe "'Dynamic variables'" do
     it "should permit inspection of value" do
       DynVar.new({:foo => 1}).foo.should == 1

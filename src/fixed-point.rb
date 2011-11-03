@@ -1,6 +1,6 @@
 require_relative 'weak-hash'
 
-module Fix
+module DerParser
   # A simple analogue to a dynamic variable. Give it a hash of
   # :name => initial_values, and you can query the current
   # value by sending :name, or rebind by sending :rebind_name.

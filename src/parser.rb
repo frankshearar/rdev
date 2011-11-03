@@ -125,7 +125,7 @@ module DerParser
 
     # Does parser accept the empty set?
     def empty?(parser = self)
-      Fix::LeastFixedPoint.run(parser, false) { |x|
+      LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
           true
         elsif x.eps?
@@ -146,7 +146,7 @@ module DerParser
 
     # Does parser accept the empty string?
     def nullable?(parser = self)
-      Fix::LeastFixedPoint.run(parser, false) { |x|
+      LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
           false
         elsif x.eps?
