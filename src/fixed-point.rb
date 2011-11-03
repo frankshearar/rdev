@@ -1,22 +1,6 @@
+require_relative 'weak-hash'
+
 module Fix
-  class WeakHash
-    def initialize
-      @hash = Hash.new
-    end
-
-    def has_key?(key)
-      @hash.has_key?(key)
-    end
-
-    def [](key)
-      @hash[key]
-    end
-
-    def []=(key, new_val)
-      @hash[key] = WeakRef.new(new_val)
-    end
-  end
-
   # A simple analogue to a dynamic variable. Give it a hash of
   # :name => initial_values, and you can query the current
   # value by sending :name, or rebind by sending :rebind_name.
