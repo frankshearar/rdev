@@ -74,34 +74,6 @@ module DerParser
                          })
     end
 
-    def cache
-      @mutable_cache
-    end
-
-    def changed?
-      return @vars.changed?
-    end
-
-    def running?
-      return @vars.running?
-    end
-
-    def visited
-      return @vars.visited
-    end
-
-    def rebind_changed(bool)
-      @vars.rebind_changed?(bool)
-    end
-
-    def rebind_running(bool)
-      @vars.rebind_running?(bool)
-    end
-
-    def rebind_visited(bool)
-      @vars.rebind_visited(bool)
-    end
-
     def run(x, bottom, &unary_block)
       is_cached = cache.has_key?(x)
       cached = cached_or_else(x, ->{bottom})
@@ -129,6 +101,36 @@ module DerParser
         end
         v
       end
+    end
+
+    private
+
+    def cache
+      @mutable_cache
+    end
+
+    def changed?
+      return @vars.changed?
+    end
+
+    def running?
+      return @vars.running?
+    end
+
+    def visited
+      return @vars.visited
+    end
+
+    def rebind_changed(bool)
+      @vars.rebind_changed?(bool)
+    end
+
+    def rebind_running(bool)
+      @vars.rebind_running?(bool)
+    end
+
+    def rebind_visited(bool)
+      @vars.rebind_visited(bool)
     end
 
     def cached_or_else(key, alternative)
