@@ -22,4 +22,9 @@ describe WeakHash do
     ObjectSpace.garbage_collect
     @hash.has_key?(:foo).should be_false
   end
+
+  it "should permit checking the presence of non-finalizable values" do
+    @hash[:foo] = 1
+    @hash.has_key?(:foo).should be_true
+  end
 end

@@ -6,7 +6,13 @@ class WeakHash
   end
 
   def has_key?(key)
-    @hash.has_key?(key) and @hash[key].weakref_alive?
+    return false unless @hash.has_key?(key)
+
+    if @hash[key].respond_to?(:weakref_alive?) then
+      @hash[key].weakref_alive?
+    else
+      true
+    end
   end
 
   def [](key)
