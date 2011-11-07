@@ -1,4 +1,6 @@
 require_relative 'fixed-point'
+require_relative 'memoize'
+require 'set'
 
 module DerParser
 
@@ -9,7 +11,7 @@ module DerParser
   # The language that accepts the empty set.
   class EmptyParser < Parser
     def ==(obj)
-      obj.empty_parser?
+      !obj.nil? and obj.empty_parser?
     end
 
     def empty_parser?
@@ -28,7 +30,7 @@ module DerParser
   # The language that accepts the empty string.
   class EpsilonParser < Parser
     def ==(obj)
-      obj.eps?
+      !obj.nil? and obj.eps?
     end
 
     def eps?
@@ -44,6 +46,27 @@ module DerParser
     end
   end
 
+  # An empty string that produces a tree. Only appears during parsing.
+  class EpsilonPrimeParser < EpsilonParser
+    attr_accessor :parser
+
+    def initialize(parser)
+      @parser = parser
+    end
+
+    def ==(obj)
+      !obj.nil? and obj.eps_prime?
+    end
+
+    def eps_prime?
+      true
+    end
+
+    def compact
+      parser.parse_null
+    end
+  end
+
   # The language that accepts input satisfying some predicate (i.e.,
   # a unary block that returns a boolean).
   class TokenParser < Parser
@@ -54,7 +77,7 @@ module DerParser
     end
 
     def ==(obj)
-      obj.token_parser?
+      !obj.nil? and obj.token_parser?
     end
 
     def token_parser?
@@ -72,6 +95,8 @@ module DerParser
   end
 
   class Parser
+    include Memoizer
+
     @@EMPTY = EmptyParser.new
     @@EPS = EpsilonParser.new
 
@@ -104,6 +129,10 @@ module DerParser
     end
 
     def eps?
+      false
+    end
+
+    def eps_prime?
       false
     end
 
@@ -184,6 +213,47 @@ module DerParser
     def derive(input_token)
       raise "Not implemented yet for #{self.class.name}"
     end
+
+    def parse(input, compact = :yourself, steps = false, debug = false)
+      if (steps or steps == 0) then return self end
+      if not input.next? then return self.parse_null end
+
+      c = input.next
+      rest = input.remaining
+      dl_dc = self.derivative(c)
+      l_prime = dl_dc.compact
+
+      puts("debug") if debug
+
+      l_prime.parse(input.remaining,
+                    compact,
+                    if steps then steps - 1 else steps end,
+                    debug)
+    end
+
+    def parse_null(parser = self)
+      empty_set = Set.new
+      LeastFixedPoint.run(parser, empty_set) { |x|
+        if parser.empty? then
+          empty_set
+        elsif parser.eps_prime? then
+          parser.parser
+        elsif parser.eps? then
+          Set[parser]
+        elsif parser.token_parser? then
+          empty_set
+        elsif parser.union? then
+          parser.left_parser.parse_null.merge(parser.right_parser.parse_null)
+        elsif parser.sequence? then
+#     [(seqp l1 l2)   (for*/set ([t1 (parse-null l1)]
+#                                [t2 (parse-null l2)])
+#                               (cons t1 t2))]
+        elsif parser.reduction? then
+#     [(redp l1 f)    (for/set ([t (parse-null l1)])
+#                              (f t))]))
+        end
+      }
+    end
   end
 
   class UnionParser < Parser
@@ -200,6 +270,7 @@ module DerParser
     end
 
     def ==(obj)
+      return false if obj.nil?
       return false unless obj.union?
       (left_parser == obj.left_parser) and (right_parser == obj.right_parser)
     end
@@ -235,6 +306,7 @@ module DerParser
     end
 
     def ==(obj)
+      return false if obj.nil?
       return false unless obj.sequence?
 
       (first_parser == obj.first_parser) and (second_parser == obj.second_parser)
@@ -286,6 +358,15 @@ module DerParser
   class DelegateParser < Parser
     attr_accessor :parser
 
+    def initialize(parser = nil)
+      @parser = parser
+    end
+
+    def ==(obj)
+      return false if obj.nil?
+      (obj.eps? and eps?) or (obj.empty? and empty?) or (obj.eps_prime? and eps_prime?) or (obj.token_parser? and token_parser?) or (obj.union? and union?) or (obj.sequence? and sequence?) or (obj.reducer? and reducer?)
+    end
+
     def empty_parser?
       parser.empty_parser?
     end
@@ -294,12 +375,20 @@ module DerParser
       parser.eps?
     end
 
+    def eps_prime?
+      parser.eps_prime?
+    end
+
     def token_parser?
       parser.token_parser?
     end
 
     def union?
       parser.union?
+    end
+
+    def reducer?
+      parser.reducer?
     end
 
     def sequence?

@@ -60,6 +60,11 @@ module DerParser
       Parser.eps.compact.should == Parser.eps
     end
 
+    it "should compact eps* to the parse-null of its contained language" do
+      t = Parser.literal('a').then(Parser.literal('b'))
+      EpsilonPrimeParser.new(t).compact.should == t.parse_null
+    end
+
     it "should compact a token parser to itself" do
       lit = Parser.literal('a')
       lit.compact.should == lit
@@ -140,12 +145,16 @@ module DerParser
     end
   end
 
-  describe "Equality" do
-    it "empty parsers should be ==" do
+  describe "Equality: empty parser" do
+    it "should == empty parser" do
       EmptyParser.new.should == EmptyParser.new
     end
 
-    it "empty parsers and eps parsers should not be ==" do
+    it "should not == nil" do
+      EmptyParser.new.should_not == nil
+    end
+
+    it "should not == eps parser" do
       empty = EmptyParser.new
       eps = EpsilonParser.new
 
@@ -153,20 +162,64 @@ module DerParser
       eps.should_not == empty
     end
 
-    it "eps parsers should be ==" do
+    it "should == parser delegating to empty" do
+      Parser.empty.should == DelegateParser.new(Parser.empty)
+    end
+  end
+
+  describe "Equality: eps parser" do
+    it "should == eps parser" do
       EpsilonParser.new.should == EpsilonParser.new
     end
 
-    it "token parsers should be == when they consume == tokens" do
+    it "should not == nil" do
+      EpsilonParser.new.should_not == nil
+    end
+
+    it "should == parser delegating to eps" do
+      Parser.eps.should == DelegateParser.new(Parser.eps)
+    end
+  end
+
+  describe "Equality: eps* parser" do
+    it "should == another eps* parser on the same language" do
+      EpsilonPrimeParser.new(Parser.empty).should == EpsilonPrimeParser.new(Parser.empty)
+    end
+
+    it "should not == eps* parser on a different language" do
+      EpsilonPrimeParser.new(Parser.empty).should == EpsilonPrimeParser.new(Parser.eps)
+    end
+
+    it "should not == eps" do
+      EpsilonPrimeParser.new(Parser.empty).should_not == EpsilonParser.new
+    end
+
+    it "should not == nil" do
+      EpsilonPrimeParser.new(Parser.empty).should_not == nil
+    end
+
+    it "eps* parser should == parser delegating to eps*" do
+      EpsilonPrimeParser.new(Parser.empty).should == DelegateParser.new(EpsilonPrimeParser.new(Parser.empty))
+    end
+  end
+
+  describe "Equality: token parser" do
+    it "should == parser consuming == token" do
       TokenParser.new('foo', :lit).should == TokenParser.new('foo', :lit)
     end
 
-    it "token parsers should not be == when they consume == tokens" do
+    it "should not == parser consuming different == tokens" do
       TokenParser.new('foo', :lit).should == TokenParser.new('bar', :lit)
       TokenParser.new('foo', :lit).should == TokenParser.new('foo', :literal)
     end
 
-    it "union parsers should be == when their parts are ==" do
+    it "should not == nil" do
+      TokenParser.new('foo', :lit).should_not == nil
+    end
+  end
+
+  describe "Equality: union parser" do
+    it "should == when parts are ==" do
       a = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
       b = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
 
@@ -174,26 +227,38 @@ module DerParser
       b.should == a
     end
 
-    it "union parsers should not be == to empty" do
+    it "should not == empty" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
       u.should_not == Parser.empty
       Parser.empty.should_not == u
     end
 
-    it "union parsers should not be == to eps" do
+    it "should not == eps" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
       u.should_not == Parser.eps
       Parser.eps.should_not == u
     end
 
-    it "union parsers should not be == to token parsers" do
+    it "should not == eps*" do
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u.should_not == EpsilonPrimeParser.new(Parser.empty)
+      EpsilonPrimeParser.new(Parser.empty).should_not == u
+    end
+
+    it "should not == token parsers" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
       t = TokenParser.new('foo', :lit)
       u.should_not == t
       t.should_not == u
     end
 
-    it "sequence parsers should be == when their parts are ==" do
+    it "should not == nil" do
+      UnionParser.new(Parser.empty, TokenParser.new('foo', :lit)).should_not == nil
+    end
+  end
+
+  describe "Equality: sequence parser" do
+    it "should == when parts are ==" do
       a = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
       b = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
 
@@ -201,23 +266,67 @@ module DerParser
       b.should == a
     end
 
-    it "sequence parsers should not be == to empty" do
+    it "should not == empty" do
       u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
       u.should_not == Parser.empty
       Parser.empty.should_not == u
     end
 
-    it "sequence parsers should not be == to eps" do
+    it "should not == eps" do
       u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
       u.should_not == Parser.eps
       Parser.eps.should_not == u
     end
 
-    it "sequence parsers should not be == to token parsers" do
+    it "should not == eps*" do
+      u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u.should_not == EpsilonPrimeParser.new(Parser.empty)
+      EpsilonPrimeParser.new(Parser.empty).should_not == u
+    end
+
+    it "should not == token parsers" do
       u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
       t = TokenParser.new('foo', :lit)
       u.should_not == t
       t.should_not == u
+    end
+
+    it "should not == nil" do
+      SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit)).should_not == nil
+    end
+  end
+
+  describe "Equality: delegate parser" do
+    it "should == delegated parser of same language (empty)" do
+      DelegateParser.new(Parser.empty).should == Parser.empty
+    end
+
+    it "should == delegated parser of same language (eps)" do
+      DelegateParser.new(Parser.eps).should == Parser.eps
+    end
+
+    it "should == delegated parser of same language (eps*)" do
+      DelegateParser.new(EpsilonPrimeParser.new(Parser.empty)).should == EpsilonPrimeParser.new(Parser.empty)
+    end
+
+    it "should == delegated parser of same language (token parser)" do
+      t = Parser.literal('foo')
+      DelegateParser.new(t).should == t
+    end
+
+    it "should == delegated parser of same language (union parser)" do
+      u = Parser.literal('foo').or(Parser.literal('bar'))
+      DelegateParser.new(u).should == u
+    end
+
+    it "should == delegated parser of same language (sequence parser)" do
+      s = Parser.literal('foo').then(Parser.literal('bar'))
+      DelegateParser.new(s).should == s
+    end
+
+    it "should == delegated parser of same language (reduction parser)" do
+      r = ReductionParser.new(Parser.literal('foo'), ->x{x})
+      DelegateParser.new(r).should == r
     end
   end
 
