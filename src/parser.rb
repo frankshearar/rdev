@@ -55,7 +55,7 @@ module DerParser
     end
 
     def ==(obj)
-      !obj.nil? and obj.eps_prime?
+      !obj.nil? and obj.respond_to?(:eps_prime?) and obj.eps_prime?
     end
 
     def eps_prime?
@@ -71,13 +71,15 @@ module DerParser
   # a unary block that returns a boolean).
   class TokenParser < Parser
     attr_reader :predicate
+    attr_reader :token_class
 
-    def initialize(predicate, tokenClass)
+    def initialize(predicate, token_class)
       @predicate = predicate
+      @token_class = token_class
     end
 
     def ==(obj)
-      !obj.nil? and obj.token_parser?
+      !obj.nil? and obj.token_parser? and (predicate == obj.predicate) and (token_class == obj.token_class)
     end
 
     def token_parser?

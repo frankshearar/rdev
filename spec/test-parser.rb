@@ -150,6 +150,11 @@ module DerParser
       EmptyParser.new.should == EmptyParser.new
     end
 
+    it "should == itself" do
+      e = EmptyParser.new
+      e.should == e
+    end
+
     it "should not == nil" do
       EmptyParser.new.should_not == nil
     end
@@ -168,6 +173,15 @@ module DerParser
   end
 
   describe "Equality: eps parser" do
+    it "should not == nil" do
+      EpsilonParser.new.should_not == nil
+    end
+
+    it "should == itself" do
+      e = EpsilonParser.new
+      e.should == e
+    end
+
     it "should == eps parser" do
       EpsilonParser.new.should == EpsilonParser.new
     end
@@ -204,13 +218,25 @@ module DerParser
   end
 
   describe "Equality: token parser" do
+    it "should not == nil" do
+      Parser.literal('foo').should_not == nil
+    end
+
+    it "should == itself" do
+      f = Parser.literal('foo')
+      f.should == f
+    end
+
     it "should == parser consuming == token" do
       TokenParser.new('foo', :lit).should == TokenParser.new('foo', :lit)
     end
 
     it "should not == parser consuming different == tokens" do
-      TokenParser.new('foo', :lit).should == TokenParser.new('bar', :lit)
-      TokenParser.new('foo', :lit).should == TokenParser.new('foo', :literal)
+      pred_1 = ->x{x}
+      pred_2 = ->x{x.to_s}
+
+      TokenParser.new(pred_1, :lit).should_not == TokenParser.new(pred_2, :lit)
+      TokenParser.new(pred_1, :lit).should_not == TokenParser.new(pred_1, :literal)
     end
 
     it "should not == nil" do
@@ -219,6 +245,16 @@ module DerParser
   end
 
   describe "Equality: union parser" do
+    it "should not == nil" do
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u.should_not == nil
+    end
+
+    it "should == itself" do
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u.should == u
+    end
+
     it "should == when parts are ==" do
       a = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
       b = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
@@ -258,6 +294,16 @@ module DerParser
   end
 
   describe "Equality: sequence parser" do
+    it "should not == nil" do
+      s = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      s.should_not == nil
+    end
+
+    it "should == itself" do
+      s = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      s.should == s
+    end
+
     it "should == when parts are ==" do
       a = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
       b = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
@@ -293,6 +339,65 @@ module DerParser
 
     it "should not == nil" do
       SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit)).should_not == nil
+    end
+  end
+
+  describe "Equality: reduction parser" do
+    it "should not == nil" do
+      ReductionParser.new(Parser.empty, ->x{x}).should_not == nil
+    end
+
+    it "should not == empty parser" do
+      ReductionParser.new(Parser.empty, ->x{x}).should_not == Parser.empty
+    end
+
+    it "should not == eps parser" do
+      ReductionParser.new(Parser.eps, ->x{x}).should_not == Parser.eps
+    end
+
+    it "should not == eps* parser" do
+      prime = EpsilonPrimeParser.new(Set[])
+      ReductionParser.new(prime, ->x{x}).should_not == prime
+    end
+
+    it "should not == token parser" do
+      t = Parser.literal('foo')
+      ReductionParser.new(t, ->x{x}).should_not == t
+    end
+
+    it "should not == union parser" do
+      u = Parser.literal('foo').or(Parser.literal('bar'))
+      ReductionParser.new(u, ->x{x}).should_not == u
+    end
+
+    it "should not == sequence parser" do
+      s = Parser.literal('foo').then(Parser.literal('bar'))
+      ReductionParser.new(s, ->x{x}).should_not == s
+    end
+
+    it "should not == delegate parser" do
+      d = DelegateParser.new(Parser.literal('foo'))
+      ReductionParser.new(d, ->x{x}).should_not == d
+    end
+
+    it "should not == reduction parser of different grammar but same reduction" do
+      red = ->x{x}
+      r_foo = ReductionParser.new(Parser.literal('foo'), red)
+      r_bar = ReductionParser.new(Parser.literal('bar'), red)
+      r_foo.should_not == r_bar
+    end
+
+    it "should not == reduction parser of same grammar but different reduction" do
+      red_1 = ->x{x}
+      red_2 = ->x{x.to_s} # red_2 = ->x{x} results in red_1 == red_2 !
+      p_1 = ReductionParser.new(Parser.empty, red_1)
+      p_2 = ReductionParser.new(Parser.empty, red_2)
+      p_1.should_not == p_2
+    end
+
+    it "should == reduction parser of same grammar and same reduction" do
+      red = ->x{x}
+      ReductionParser.new(Parser.empty, red).should == ReductionParser.new(Parser.empty, red)
     end
   end
 
@@ -400,7 +505,7 @@ module DerParser
     it "eps parser is nullable" do
       Parser.eps.nullable?.should be_true
     end
-    
+
     it "token parser is not nullable" do
       Parser.literal('foo').nullable?.should be_false
     end
