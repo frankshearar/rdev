@@ -48,17 +48,18 @@ module DerParser
   # memoise any method :foo by calling :memo_foo. (Methods with bangs
   # are never memoised.)
   module Memoizer
-    def initialize
-      super
-      @memo = Memo.new
-    end
-
     def method_missing(m, *a, &b)
       if /memo_([a-zA-Z][[[:alnum:]]_]*\??\z)/.match(m.to_s) then
-        @memo.call($1, self, *a, &b)
+        memo.call($1, self, *a, &b)
       else
         super(m, a, b)
       end
+    end
+
+    private
+    def memo
+      @memo = Memo.new if @memo.nil?
+      @memo
     end
   end
 end
