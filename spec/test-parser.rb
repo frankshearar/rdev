@@ -590,16 +590,38 @@ module DerParser
   #   end
   # end
 
+  describe Equals do
+    it "should return true for == objects" do
+      Equals.new(1).call(1).should be_true
+    end
+
+    it "should return false for not == objects" do
+      Equals.new(1).call(2).should be_false
+    end
+
+    it "should not == nil" do
+      Equals.new(1).should_not == nil
+    end
+
+    it "should == itself" do
+      e = Equals.new(1)
+      e.should == e
+    end
+
+    it "should == Equals with equal-valued parameter" do
+      Equals.new(1).should == Equals.new(1)
+    end
+
+    it "should not == Equals with different-valued parameter" do
+      Equals.new(1).should_not == Equals.new(2)
+    end
+  end
+
   describe "Function objects" do
     it "should define the identity function" do
       Identity.new.call(1).should == 1
       Identity.new.call("a string").should == "a string"
       Identity.new.call(:a_symbol).should == :a_symbol
-    end
-
-    it "should define an equality matcher" do
-      Equals.new(1).call(1).should be_true
-      Equals.new(1).call(2).should be_false
     end
 
     it "should permit composition of Reductions" do
@@ -619,7 +641,48 @@ module DerParser
       Compose.new(->x{x * 2}, ->x{x + 1}).call(3).should == 8
     end
 
+    it "should not == nil" do
+      Compose.new(Cat.with_object(1), Cat.with_object(2)).should_not == nil
+    end
+
+    it "should == itself" do
+      c = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      c.should == c
+    end
+
+    it "should == composition of same-value functions" do
+      a = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      b = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      a.should == b
+    end
+
+    it "should == composition of equivalent-value functions" do
+      a = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      b = Compose.new(Cat.with_array([1]), Cat.with_array([2]))
+      a.should == b
+    end
+
+    it "should not == when f differs" do
+      a = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      b = Compose.new(Cat.with_object(2), Cat.with_object(2))
+      a.should_not == b
+    end
+
+    it "should not == when g differs" do
+      a = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      b = Compose.new(Cat.with_object(1), Cat.with_object(1))
+      a.should_not == b
+    end
+
+    it "should not == when f and g differ" do
+      a = Compose.new(Cat.with_object(1), Cat.with_object(2))
+      b = Compose.new(Cat.with_object(2), Cat.with_object(1))
+      a.should_not == b
+    end
+
     class Adder
+      attr_accessor :increment
+
       def initialize(a_number)
         @increment = a_number
       end
@@ -642,6 +705,27 @@ module DerParser
     it "should allow treating of an array as an item" do
       Cat.with_object([1]).call(2).should == [[1], 2]
     end
+
+    it "should not be == to nil" do
+      Cat.with_object(1).should_not == nil
+    end
+
+    it "should be == to itself" do
+      c = Cat.with_object(1)
+      c.should == c
+    end
+
+    it "should be == to a Cat with the same parameters" do
+      Cat.with_object(1).should == Cat.with_object(1)
+    end
+
+    it "should be == to a Cat with equivalent parameters" do
+      Cat.with_object(1).should == Cat.with_array([1])
+    end
+
+    it "should not be == to a Cat with different parameters" do
+      Cat.with_object(1).should_not == Cat.with_object(2)
+    end
   end
 
   describe HeadCat do
@@ -655,6 +739,27 @@ module DerParser
 
     it "should allow treating of an array as an item" do
       HeadCat.with_object([1]).call(2).should == [2, [1]]
+    end
+
+    it "should not be == to nil" do
+      HeadCat.with_object(1).should_not == nil
+    end
+
+    it "should be == to itself" do
+      c = HeadCat.with_object(1)
+      c.should == c
+    end
+
+    it "should be == to a Cat with the same parameters" do
+      HeadCat.with_object(1).should == HeadCat.with_object(1)
+    end
+
+    it "should be == to a Cat with equivalent parameters" do
+      HeadCat.with_object(1).should == HeadCat.with_array([1])
+    end
+
+    it "should not be == to a Cat with different parameters" do
+      HeadCat.with_object(1).should_not == HeadCat.with_object(2)
     end
   end
 end

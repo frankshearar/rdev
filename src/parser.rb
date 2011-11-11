@@ -420,8 +420,14 @@ module DerParser
   end
 
   class Equals < Reduction
+    attr_reader :token
+
     def initialize(token)
       @token = token
+    end
+
+    def ==(obj)
+      !obj.nil? and obj.respond_to?(:token) and (@token == obj.token)
     end
 
     def call(input)
@@ -430,11 +436,18 @@ module DerParser
   end
 
   class Compose < Reduction
+    attr_reader :f
+    attr_reader :g
+
     def initialize(f_proc_like, g_proc_like)
       raise "Cannot use a #{f_proc_like.class.name} for composition" unless f_proc_like.respond_to?(:call)
       raise "Cannot use a #{g_proc_like.class.name} for composition" unless g_proc_like.respond_to?(:call)
       @f = f_proc_like
       @g = g_proc_like
+    end
+
+    def ==(obj)
+      !obj.nil? and (obj.respond_to?(:f)) and (obj.respond_to?(:g)) and (f == obj.f) and (g == obj.g)
     end
 
     def call(input)
@@ -443,8 +456,14 @@ module DerParser
   end
 
   class Cat < Reduction
+    attr_reader :seed
+
     def initialize(array)
       @seed = array
+    end
+
+    def ==(obj)
+      !obj.nil? and (obj.class == self.class) and (@seed == obj.seed)
     end
 
     def self.with_array(array)
