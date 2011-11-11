@@ -47,10 +47,10 @@ module DerParser
 
   # An empty string that produces a tree. Only appears during parsing.
   class EpsilonPrimeParser < EpsilonParser
-    attr_accessor :parser
+    attr_reader :parse_trees
 
-    def initialize(parser)
-      @parser = parser
+    def initialize(parse_trees)
+      @parse_trees = parse_trees
     end
 
     def ==(obj)
@@ -59,10 +59,6 @@ module DerParser
 
     def eps_prime?
       true
-    end
-
-    def compact
-      parser.parse_null
     end
   end
 
@@ -119,7 +115,7 @@ module DerParser
     end
 
     def self.literal(literal)
-      token_matching(->x{x == literal}, :literal)
+      token_matching(Equals.new(literal), :literal)
     end
 
     def self.token_matching(predicate, token_class)
@@ -224,16 +220,16 @@ module DerParser
       raise "Not implemented yet for #{self.class.name}"
     end
 
-    def parse(input, compact = :yourself, steps = false, debug = false)
+    def parse(input, compact = Identity.new, steps = false, debug = false)
+      puts("debug: #{self.class.name}") if debug
+
       if (steps or steps == 0) then return self end
       if not input.next? then return self.parse_null end
 
       c = input.next
       rest = input.remaining
-      dl_dc = self.derivative(c)
-      l_prime = dl_dc.compact
-
-      puts("debug") if debug
+      dl_dc = self.derive(c)
+      l_prime = dl_dc.memo_compact
 
       l_prime.parse(input.remaining,
                     compact,
@@ -255,12 +251,11 @@ module DerParser
         elsif parser.union? then
           parser.left_parser.parse_null.merge(parser.right_parser.parse_null)
         elsif parser.sequence? then
-#     [(seqp l1 l2)   (for*/set ([t1 (parse-null l1)]
-#                                [t2 (parse-null l2)])
-#                               (cons t1 t2))]
+          first_parser.parse_null.zip(second_parser.parse_null)
         elsif parser.reduction? then
-#     [(redp l1 f)    (for/set ([t (parse-null l1)])
-#                              (f t))]))
+          parser.parser.parse_null.collect {|t|
+            parser.reduction_function.call(t)
+          }
         end
       }
     end
@@ -288,12 +283,14 @@ module DerParser
     def compact
       if self.empty? then
         Parser.empty
+      elsif self.nullable? then
+        EpsilonPrimeParser.new(self.parse_null)
       elsif left_parser.empty? then
-        right_parser.compact
+        right_parser.memo_compact
       elsif right_parser.empty? then
-        left_parser.compact
+        left_parser.memo_compact
       else
-        left_parser.compact.or(right_parser.compact)
+        left_parser.memo_compact.or(right_parser.memo_compact)
       end
     end
 
@@ -323,14 +320,16 @@ module DerParser
     end
 
     def compact
-      if self.nullable? then
+      if self.empty? then
         Parser.empty
+      elsif self.nullable? then
+        EpsilonPrimeParser.new(self.parse_null)
       elsif first_parser.nullable? then
-        second_parser.compact
+        ReductionParser.new(second_parser.memo_compact, Cat.with_object(first_parser))
       elsif second_parser.nullable? then
-        first_parser.compact
+        ReductionParser.new(first_parser.memo_compact, HeadCat.with_object(second_parser))
       else
-        first_parser.compact.then(second_parser.compact)
+        first_parser.memo_compact.then(second_parser.memo_compact)
       end
     end
   end
@@ -367,11 +366,20 @@ module DerParser
     def compact
       if @parser.empty?
         Parser.empty
+      elsif self.nullable? then
+        EpsilonPrimeParser.new(self.parse_null)
+      elsif @parser.empty? then
+        Parser.empty
+      elsif @parser.nullable? then
+        EpsilonPrimeParser.new(@parser.parse_null.collect(@parser.reduction_function))
+      elsif @parser.sequence? and @parser.first_parser.nullable? then
+        t = @parser.first_parser
+        ReductionParser.new(@parser.second_parser.memo_compact, Cat.with_object(t))
       elsif @parser.reducer? then
         ReductionParser.new(@parser.parser.compact,
-                            ->x{@reduction_function.call(@parser.reduction_function.call(x))})
+                            Compose.new(@reduction_function, @parser.reduction_function))
       else
-        ReductionParser.new(@parser.compact, @reduction_function)
+        ReductionParser.new(@parser.memo_compact, @reduction_function)
       end
     end
 

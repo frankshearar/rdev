@@ -1,4 +1,5 @@
 require_relative '../src/parser.rb'
+require_relative '../src/stream.rb'
 
 module DerParser
   describe "Parser" do
@@ -60,9 +61,10 @@ module DerParser
       Parser.eps.compact.should == Parser.eps
     end
 
-    it "should compact eps* to the parse-null of its contained language" do
+    it "should compact eps* to itself" do
       t = Parser.literal('a').then(Parser.literal('b'))
-      EpsilonPrimeParser.new(t).compact.should == t.parse_null
+      eps_star = EpsilonPrimeParser.new(Set[])
+      eps_star.compact.should == eps_star
     end
 
     it "should compact a token parser to itself" do
@@ -81,13 +83,13 @@ module DerParser
       union.compact.should == a.compact
     end
 
-    it "should compact A union 0 parser to A compact" do
+    it "should compact A or 0 to A compact" do
       a = Parser.literal('a').then(Parser.eps)
       union = a.union(Parser.empty)
       union.compact.should == a.compact
     end
 
-    it "should compact A union B to A compact union B compact" do
+    it "should compact A or B to A compact or B compact" do
       a = Parser.literal('a').then(Parser.eps)
       b = Parser.eps.then(Parser.literal('b'))
       a.or(b).compact.should == a.compact.or(b.compact)
@@ -110,38 +112,46 @@ module DerParser
       red_empty.compact.should == Parser.empty
     end
 
-    it "should compact an eps then something to the compaction of the something" do
-      something = Parser.literal('a').then(Parser.eps)
-      seq = Parser.eps.then(something)
-      seq.compact.should == something.compact
+    it "should compact eps then A to A compact" do
+      a = Parser.literal('a').then(Parser.eps)
+      seq = Parser.eps.then(a)
+      cmpct = seq.compact
+      cmpct.should be_reducer
+      cmpct.parser.should == a.compact
     end
 
     it "should compact A then eps to A compact" do
       a = Parser.eps.then(Parser.literal('a'))
       seq = Parser.eps.then(a)
-      seq.compact.should == a.compact
+      cmpct = seq.compact
+      cmpct.should be_reducer
+      cmpct.parser.should == a.compact
     end
 
     it "should compact a delegate parser as the parser to which it delegates" do
-      something = Parser.eps.then(Parser.literal('a'))
+      a = Parser.eps.then(Parser.literal('a'))
       delegate = DelegateParser.new
-      delegate.parser = something
-      delegate.compact.should == something.compact
+      delegate.parser = a
+      delegate.compact.should == a.compact
     end
 
     it "should compact a reduction parser's parser" do
-      something = Parser.eps.then(Parser.literal('a'))
-      reduction = ReductionParser.new(something, ->x{x})
-      reduction.compact.reducer?.should be_true
-      reduction.compact.parser.should == something.compact
+      a = Parser.eps.then(Parser.literal('a'))
+      reduction = ReductionParser.new(a, Identity.new)
+      cmpct = reduction.compact
+      cmpct.should be_reducer
+      cmpct.parser.should == a.second_parser
     end
 
     it "should compact nested reductions as a composition of the reduction functions" do
-      a = Parser.eps.then(Parser.literal('a'))
+      a = Parser.literal('a')
       inner = ReductionParser.new(a, ->x{x * 2})
       outer = ReductionParser.new(inner, ->x{x + 1})
-      outer.compact.parser.should == a.compact
-      outer.compact.reduction_function.call(1).should == 3
+
+      cmpct = outer.compact
+      cmpct.reduction_function.call(1).should == 3
+      cmpct.should be_reducer
+      cmpct.parser.should be_token_parser
     end
   end
 
@@ -197,23 +207,23 @@ module DerParser
 
   describe "Equality: eps* parser" do
     it "should == another eps* parser on the same language" do
-      EpsilonPrimeParser.new(Parser.empty).should == EpsilonPrimeParser.new(Parser.empty)
+      EpsilonPrimeParser.new(Set[]).should == EpsilonPrimeParser.new(Set[])
     end
 
     it "should not == eps* parser on a different language" do
-      EpsilonPrimeParser.new(Parser.empty).should == EpsilonPrimeParser.new(Parser.eps)
+      EpsilonPrimeParser.new(Set[]).should == EpsilonPrimeParser.new(Set[1])
     end
 
     it "should not == eps" do
-      EpsilonPrimeParser.new(Parser.empty).should_not == EpsilonParser.new
+      EpsilonPrimeParser.new(Set[]).should_not == EpsilonParser.new
     end
 
     it "should not == nil" do
-      EpsilonPrimeParser.new(Parser.empty).should_not == nil
+      EpsilonPrimeParser.new(Set[]).should_not == nil
     end
 
     it "eps* parser should == parser delegating to eps*" do
-      EpsilonPrimeParser.new(Parser.empty).should == DelegateParser.new(EpsilonPrimeParser.new(Parser.empty))
+      EpsilonPrimeParser.new(Set[]).should == DelegateParser.new(EpsilonPrimeParser.new(Set[]))
     end
   end
 
@@ -277,8 +287,8 @@ module DerParser
 
     it "should not == eps*" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      u.should_not == EpsilonPrimeParser.new(Parser.empty)
-      EpsilonPrimeParser.new(Parser.empty).should_not == u
+      u.should_not == EpsilonPrimeParser.new(Set[])
+      EpsilonPrimeParser.new(Set[]).should_not == u
     end
 
     it "should not == token parsers" do
@@ -326,8 +336,8 @@ module DerParser
 
     it "should not == eps*" do
       u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      u.should_not == EpsilonPrimeParser.new(Parser.empty)
-      EpsilonPrimeParser.new(Parser.empty).should_not == u
+      u.should_not == EpsilonPrimeParser.new(Set[])
+      EpsilonPrimeParser.new(Set[]).should_not == u
     end
 
     it "should not == token parsers" do
@@ -411,7 +421,7 @@ module DerParser
     end
 
     it "should == delegated parser of same language (eps*)" do
-      DelegateParser.new(EpsilonPrimeParser.new(Parser.empty)).should == EpsilonPrimeParser.new(Parser.empty)
+      DelegateParser.new(EpsilonPrimeParser.new(Set[])).should == EpsilonPrimeParser.new(Set[])
     end
 
     it "should == delegated parser of same language (token parser)" do
@@ -583,10 +593,13 @@ module DerParser
     end
   end
 
-  # Need deriving before we can test parsing
   # describe "Parsing" do
-  #   it "token parser should accept a token" do
-  #     fail "Not implemented yet"
+  #   it "should accept the empty language" do
+  #     Parser.eps.parse(StringStream.new('')).should == Set[]
+  #   end
+
+  #   it "should accept a token" do
+  #     Parser.literal('f').parse(StringStream.new('f'), ->x{x}, false, true).should == Set['f']
   #   end
   # end
 
