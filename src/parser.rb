@@ -414,6 +414,10 @@ module DerParser
   end
 
   class Identity < Reduction
+    def ==(obj)
+      !obj.nil? and (obj.class == self.class)
+    end
+
     def call(input)
       input
     end

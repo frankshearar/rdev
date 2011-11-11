@@ -617,13 +617,7 @@ module DerParser
     end
   end
 
-  describe "Function objects" do
-    it "should define the identity function" do
-      Identity.new.call(1).should == 1
-      Identity.new.call("a string").should == "a string"
-      Identity.new.call(:a_symbol).should == :a_symbol
-    end
-
+  describe Compose do
     it "should permit composition of Reductions" do
       Compose.new(Identity.new, Identity.new).call(1).should == 1
       Compose.new(Adder.new(1), Adder.new(2)).call(3).should == 6
@@ -679,17 +673,26 @@ module DerParser
       b = Compose.new(Cat.with_object(2), Cat.with_object(1))
       a.should_not == b
     end
+  end
 
-    class Adder
-      attr_accessor :increment
+  describe Identity do
+    it "should define the identity function" do
+      Identity.new.call(1).should == 1
+      Identity.new.call("a string").should == "a string"
+      Identity.new.call(:a_symbol).should == :a_symbol
+    end
 
-      def initialize(a_number)
-        @increment = a_number
-      end
+    it "should not == nil" do
+      Identity.new.should_not == nil
+    end
 
-      def call(a_number)
-        a_number + @increment
-      end
+    it "should == itself" do
+      i = Identity.new
+      i.should == i
+    end
+
+    it "should == another Identity" do
+      Identity.new.should == Identity.new
     end
   end
 
@@ -760,6 +763,18 @@ module DerParser
 
     it "should not be == to a Cat with different parameters" do
       HeadCat.with_object(1).should_not == HeadCat.with_object(2)
+    end
+  end
+
+  class Adder
+    attr_accessor :increment
+
+    def initialize(a_number)
+      @increment = a_number
+    end
+
+    def call(a_number)
+      a_number + @increment
     end
   end
 end
