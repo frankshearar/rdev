@@ -589,4 +589,72 @@ module DerParser
   #     fail "Not implemented yet"
   #   end
   # end
+
+  describe "Function objects" do
+    it "should define the identity function" do
+      Identity.new.call(1).should == 1
+      Identity.new.call("a string").should == "a string"
+      Identity.new.call(:a_symbol).should == :a_symbol
+    end
+
+    it "should define an equality matcher" do
+      Equals.new(1).call(1).should be_true
+      Equals.new(1).call(2).should be_false
+    end
+
+    it "should permit composition of Reductions" do
+      Compose.new(Identity.new, Identity.new).call(1).should == 1
+      Compose.new(Adder.new(1), Adder.new(2)).call(3).should == 6
+    end
+
+    it "should permit composition of Procs with Reductions" do
+      Compose.new(->x{x * 2}, Adder.new(1)).call(3).should == 8
+    end
+
+    it "should permit composition of Reductions with Procs" do
+      Compose.new(Adder.new(1), ->x{x * 2}).call(3).should == 7
+    end
+
+    it "should permit composition of Procs" do
+      Compose.new(->x{x * 2}, ->x{x + 1}).call(3).should == 8
+    end
+
+    class Adder
+      def initialize(a_number)
+        @increment = a_number
+      end
+
+      def call(a_number)
+        a_number + @increment
+      end
+    end
+  end
+
+  describe Cat do
+    it "should allow catenation of objects" do
+      Cat.with_object(1).call(2).should == [1, 2]
+    end
+
+    it "should allow catenation of arrays with objects" do
+      Cat.with_array([1]).call(2).should == [1, 2]
+    end
+
+    it "should allow treating of an array as an item" do
+      Cat.with_object([1]).call(2).should == [[1], 2]
+    end
+  end
+
+  describe HeadCat do
+    it "should allow adding an object to the front of a singleton array" do
+      HeadCat.with_object(1).call(2).should == [2, 1]
+    end
+
+    it "should allow adding an object to the front of an array" do
+      HeadCat.with_array([1]).call(2).should == [2, 1]
+    end
+
+    it "should allow treating of an array as an item" do
+      HeadCat.with_object([1]).call(2).should == [2, [1]]
+    end
+  end
 end

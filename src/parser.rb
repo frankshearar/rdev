@@ -3,7 +3,6 @@ require_relative 'memoize'
 require 'set'
 
 module DerParser
-
   class Parser
     # Forward declaration
   end
@@ -398,11 +397,72 @@ module DerParser
     end
 
     def compact
-      parser.compact
+      parser.memo_compact
     end
 
     def derive(input_token)
       parser.derive(input_token)
+    end
+  end
+
+  # An object that represents a formalised Proc. Useful when you want to
+  # check for equality between function-like things.
+  class Reduction
+    def call(input)
+      raise "Not implemented yet for #{self.class.name}"
+    end
+  end
+
+  class Identity < Reduction
+    def call(input)
+      input
+    end
+  end
+
+  class Equals < Reduction
+    def initialize(token)
+      @token = token
+    end
+
+    def call(input)
+      @token == input
+    end
+  end
+
+  class Compose < Reduction
+    def initialize(f_proc_like, g_proc_like)
+      raise "Cannot use a #{f_proc_like.class.name} for composition" unless f_proc_like.respond_to?(:call)
+      raise "Cannot use a #{g_proc_like.class.name} for composition" unless g_proc_like.respond_to?(:call)
+      @f = f_proc_like
+      @g = g_proc_like
+    end
+
+    def call(input)
+      @f.call(@g.call(input))
+    end
+  end
+
+  class Cat < Reduction
+    def initialize(array)
+      @seed = array
+    end
+
+    def self.with_array(array)
+      self.new(array)
+    end
+
+    def self.with_object(obj)
+      self.new([obj])
+    end
+
+    def call(input)
+      @seed + [input]
+    end
+  end
+
+  class HeadCat < Cat
+    def call(input)
+      [input] + @seed
     end
   end
 end
