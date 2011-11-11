@@ -78,7 +78,16 @@ module DerParser
     end
 
     def ==(obj)
-      !obj.nil? and obj.token_parser? and (predicate == obj.predicate) and (token_class == obj.token_class)
+      return false unless !obj.nil? and obj.token_parser?
+
+      if (predicate != obj.predicate) then
+        return false
+      end
+
+      if (token_class != obj.token_class) then
+        return false
+      end
+      true
     end
 
     def token_parser?
@@ -335,6 +344,22 @@ module DerParser
       @reduction_function = reduction_function
     end
 
+    def ==(obj)
+      return false unless !obj.nil? and obj.respond_to?(:reducer?) and obj.reducer?
+
+      # Doing this the long-winded way gives us nice line numbers,
+      # and an easy debug hook
+      if (parser != obj.parser) then
+        return false
+      end
+
+      if (reduction_function != obj.reduction_function) then
+        return false
+      end
+
+      true
+    end
+
     def reducer?
       true
     end
@@ -365,7 +390,10 @@ module DerParser
 
     def ==(obj)
       return false if obj.nil?
-      (obj.eps? and eps?) or (obj.empty? and empty?) or (obj.eps_prime? and eps_prime?) or (obj.token_parser? and token_parser?) or (obj.union? and union?) or (obj.sequence? and sequence?) or (obj.reducer? and reducer?)
+      [:eps?, :empty?, :eps_prime?, :token_parser?, \
+       :union?, :sequence?, :reducer?].inject(true) { |answer, name|
+        answer or (self.send(name) and obj.send(name))
+      }
     end
 
     def empty_parser?
