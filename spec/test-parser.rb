@@ -1,5 +1,4 @@
 require_relative '../src/parser.rb'
-require_relative '../src/stream.rb'
 
 module DerParser
   describe "Parser" do
@@ -592,16 +591,6 @@ module DerParser
       Parser.empty.then(Parser.eps).empty?.should be_true
     end
   end
-
-  # describe "Parsing" do
-  #   it "should accept the empty language" do
-  #     Parser.eps.parse(StringStream.new('')).should == Set[]
-  #   end
-
-  #   it "should accept a token" do
-  #     Parser.literal('f').parse(StringStream.new('f'), ->x{x}, false, true).should == Set['f']
-  #   end
-  # end
 
   describe Equals do
     it "should return true for == objects" do
