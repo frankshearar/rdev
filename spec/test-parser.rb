@@ -620,16 +620,16 @@ module DerParser
   end
 
   describe Compose do
-    it "should permit composition of Reductions" do
+    it "should permit composition of Callables" do
       Compose.new(Identity.new, Identity.new).call(1).should == 1
       Compose.new(Adder.new(1), Adder.new(2)).call(3).should == 6
     end
 
-    it "should permit composition of Procs with Reductions" do
+    it "should permit composition of Procs with Callables" do
       Compose.new(->x{x * 2}, Adder.new(1)).call(3).should == 8
     end
 
-    it "should permit composition of Reductions with Procs" do
+    it "should permit composition of Callables with Procs" do
       Compose.new(Adder.new(1), ->x{x * 2}).call(3).should == 7
     end
 

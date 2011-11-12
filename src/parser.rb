@@ -374,13 +374,13 @@ module DerParser
 
   # An object that represents a formalised Proc. Useful when you want to
   # check for equality between function-like things.
-  class Reduction
+  class Callable
     def call(input)
       raise "Not implemented yet for #{self.class.name}"
     end
   end
 
-  class Identity < Reduction
+  class Identity < Callable
     def ==(obj)
       !obj.nil? and (obj.class == self.class)
     end
@@ -390,7 +390,7 @@ module DerParser
     end
   end
 
-  class Equals < Reduction
+  class Equals < Callable
     attr_reader :token
 
     def initialize(token)
@@ -406,7 +406,7 @@ module DerParser
     end
   end
 
-  class Compose < Reduction
+  class Compose < Callable
     attr_reader :f
     attr_reader :g
 
@@ -426,7 +426,7 @@ module DerParser
     end
   end
 
-  class Cat < Reduction
+  class Cat < Callable
     attr_reader :seed
 
     def initialize(array)
@@ -456,7 +456,7 @@ module DerParser
     end
   end
 
-  class Compact < Reduction
+  class Compact < Callable
     include Memoizer
 
     def compact(parser)
