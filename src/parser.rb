@@ -151,9 +151,9 @@ module DerParser
         elsif x.token_parser?
           false
         elsif x.union?
-          empty?(x.left_parser) and empty?(x.right_parser)
+          empty?(x.left) and empty?(x.right)
         elsif x.sequence?
-          empty?(x.first_parser) or empty?(x.second_parser)
+          empty?(x.first) or empty?(x.second)
         elsif x.reducer?
           empty?(x.parser)
         else
@@ -172,9 +172,9 @@ module DerParser
         elsif x.token_parser?
           false
         elsif x.union?
-          nullable?(x.left_parser) or nullable?(x.right_parser)
+          nullable?(x.left) or nullable?(x.right)
         elsif x.sequence?
-          nullable?(x.first_parser) and nullable?(x.second_parser)
+          nullable?(x.first) and nullable?(x.second)
         elsif x.reducer?
           nullable?(x.parser)
         else
@@ -232,12 +232,12 @@ module DerParser
         elsif parser.token_parser? then
           empty_set
         elsif parser.union? then
-          parser.left_parser.parse_null.merge(parser.right_parser.parse_null)
+          parser.left.parse_null.merge(parser.right.parse_null)
         elsif parser.sequence? then
-          first_parser.parse_null.zip(second_parser.parse_null)
+          first.parse_null.zip(second.parse_null)
         elsif parser.reduction? then
           parser.parser.parse_null.collect {|t|
-            parser.reduction_function.call(t)
+            parser.reducer.call(t)
           }
         end
       }
@@ -245,12 +245,12 @@ module DerParser
   end
 
   class UnionParser < Parser
-    attr_reader :left_parser
-    attr_reader :right_parser
+    attr_reader :left
+    attr_reader :right
 
-    def initialize(left_parser, right_parser)
-      @left_parser = left_parser
-      @right_parser = right_parser
+    def initialize(left, right)
+      @left = left
+      @right = right
     end
 
     def union?
@@ -260,21 +260,21 @@ module DerParser
     def ==(obj)
       return false if obj.nil?
       return false unless obj.union?
-      (left_parser == obj.left_parser) and (right_parser == obj.right_parser)
+      (left == obj.left) and (right == obj.right)
     end
 
     def derive(input_token)
-      left_parser.derive(input_token).or(right_parser.derive(input_token))
+      left.derive(input_token).or(right.derive(input_token))
     end
   end
 
   class SequenceParser < Parser
-    attr_reader :first_parser
-    attr_reader :second_parser
+    attr_reader :first
+    attr_reader :second
 
-    def initialize(first_parser, second_parser)
-      @first_parser = first_parser
-      @second_parser = second_parser
+    def initialize(first, second)
+      @first = first
+      @second = second
     end
 
     def sequence?
@@ -285,17 +285,17 @@ module DerParser
       return false if obj.nil?
       return false unless obj.sequence?
 
-      (first_parser == obj.first_parser) and (second_parser == obj.second_parser)
+      (first == obj.first) and (second == obj.second)
     end
   end
 
   class ReductionParser < Parser
     attr_reader :parser
-    attr_reader :reduction_function
+    attr_reader :reducer
 
-    def initialize(parser, reduction_function)
+    def initialize(parser, reducer)
       @parser = parser
-      @reduction_function = reduction_function
+      @reducer = reducer
     end
 
     def ==(obj)
@@ -307,7 +307,7 @@ module DerParser
         return false
       end
 
-      if (reduction_function != obj.reduction_function) then
+      if (reducer != obj.reducer) then
         return false
       end
 
@@ -475,32 +475,32 @@ module DerParser
       elsif parser.token_parser?
         parser
       elsif parser.union? 
-        if parser.left_parser.empty?
-          compact(parser.right_parser)
-        elsif parser.right_parser.empty?
-          compact(parser.left_parser)
+        if parser.left.empty?
+          compact(parser.right)
+        elsif parser.right.empty?
+          compact(parser.left)
         else
-          compact(parser.left_parser).or(compact(parser.right_parser))
+          compact(parser.left).or(compact(parser.right))
         end
       elsif parser.sequence?
-        if parser.first_parser.nullable?
-          ReductionParser.new(compact(parser.second_parser), Cat.new(parser.first_parser))
-        elsif parser.second_parser.nullable?
-          ReductionParser.new(compact(parser.first_parser), HeadCat.new(parser.second_parser))
+        if parser.first.nullable?
+          ReductionParser.new(compact(parser.second), Cat.new(parser.first))
+        elsif parser.second.nullable?
+          ReductionParser.new(compact(parser.first), HeadCat.new(parser.second))
         else
-          compact(parser.first_parser).then(compact(parser.second_parser))
+          compact(parser.first).then(compact(parser.second))
         end
       elsif parser.reducer?
         if parser.parser.empty?
           Parser.empty
         elsif parser.parser.nullable?
-          EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reduction_function.call(t)})
-        elsif parser.parser.sequence? and parser.parser.first_parser.nullable?
-          ReductionParser.new(compact(parser.parser.second_parser), Cat.new(parser.parser.first_parser))
+          EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reducer.call(t)})
+        elsif parser.parser.sequence? and parser.parser.first.nullable?
+          ReductionParser.new(compact(parser.parser.second), Cat.new(parser.parser.first))
         elsif parser.parser.reducer?
-          ReductionParser.new(compact(parser.parser), Compose.new(parser.reduction_function, parser.parser.reduction_function))
+          ReductionParser.new(compact(parser.parser), Compose.new(parser.reducer, parser.parser.reducer))
         else
-          ReductionParser.new(compact(parser.parser), parser.reduction_function)
+          ReductionParser.new(compact(parser.parser), parser.reducer)
         end
       end
     end

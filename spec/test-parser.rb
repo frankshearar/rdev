@@ -139,7 +139,7 @@ module DerParser
       reduction = ReductionParser.new(a, Identity.new)
       cmpct = reduction.compact
       cmpct.should be_reducer
-      cmpct.parser.should == a.second_parser
+      cmpct.parser.should == a.second
     end
 
     it "should compact nested reductions as a composition of the reduction functions" do
@@ -148,7 +148,7 @@ module DerParser
       outer = ReductionParser.new(inner, ->x{x + 1})
 
       cmpct = outer.compact
-      cmpct.reduction_function.call(1).should == 3
+      cmpct.reducer.call(1).should == 3
       cmpct.should be_reducer
       cmpct.parser.should be_token_parser
     end
