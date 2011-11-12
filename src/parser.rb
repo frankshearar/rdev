@@ -17,10 +17,6 @@ module DerParser
       true
     end
 
-    def compact
-      self
-    end
-
     def derive(input_token)
       self
     end
@@ -34,10 +30,6 @@ module DerParser
 
     def eps?
       true
-    end
-
-    def compact
-      self
     end
 
     def derive(input_token)
@@ -83,10 +75,6 @@ module DerParser
 
     def token_parser?
       true
-    end
-
-    def compact
-      self
     end
 
     def derive(input_token)
@@ -208,7 +196,7 @@ module DerParser
     end
 
     def compact
-      raise "Not implemented yet for #{self.class.name}"
+      Compact.call(self)
     end
 
     def derive(input_token)
@@ -224,7 +212,7 @@ module DerParser
       c = input.next
       rest = input.remaining
       dl_dc = self.derive(c)
-      l_prime = dl_dc.memo_compact
+      l_prime = dl_dc.compact
 
       l_prime.parse(input.remaining,
                     compact,
@@ -275,20 +263,6 @@ module DerParser
       (left_parser == obj.left_parser) and (right_parser == obj.right_parser)
     end
 
-    def compact
-      if self.empty? then
-        Parser.empty
-      elsif self.nullable? then
-        EpsilonPrimeParser.new(self.parse_null)
-      elsif left_parser.empty? then
-        right_parser.memo_compact
-      elsif right_parser.empty? then
-        left_parser.memo_compact
-      else
-        left_parser.memo_compact.or(right_parser.memo_compact)
-      end
-    end
-
     def derive(input_token)
       left_parser.derive(input_token).or(right_parser.derive(input_token))
     end
@@ -312,20 +286,6 @@ module DerParser
       return false unless obj.sequence?
 
       (first_parser == obj.first_parser) and (second_parser == obj.second_parser)
-    end
-
-    def compact
-      if self.empty? then
-        Parser.empty
-      elsif self.nullable? then
-        EpsilonPrimeParser.new(self.parse_null)
-      elsif first_parser.nullable? then
-        ReductionParser.new(second_parser.memo_compact, Cat.with_object(first_parser))
-      elsif second_parser.nullable? then
-        ReductionParser.new(first_parser.memo_compact, HeadCat.with_object(second_parser))
-      else
-        first_parser.memo_compact.then(second_parser.memo_compact)
-      end
     end
   end
 
@@ -356,26 +316,6 @@ module DerParser
 
     def reducer?
       true
-    end
-
-    def compact
-      if @parser.empty?
-        Parser.empty
-      elsif self.nullable? then
-        EpsilonPrimeParser.new(self.parse_null)
-      elsif @parser.empty? then
-        Parser.empty
-      elsif @parser.nullable? then
-        EpsilonPrimeParser.new(@parser.parse_null.collect(@parser.reduction_function))
-      elsif @parser.sequence? and @parser.first_parser.nullable? then
-        t = @parser.first_parser
-        ReductionParser.new(@parser.second_parser.memo_compact, Cat.with_object(t))
-      elsif @parser.reducer? then
-        ReductionParser.new(@parser.parser.compact,
-                            Compose.new(@reduction_function, @parser.reduction_function))
-      else
-        ReductionParser.new(@parser.memo_compact, @reduction_function)
-      end
     end
 
     def derive(input_token)
@@ -425,10 +365,6 @@ module DerParser
 
     def sequence?
       parser.sequence?
-    end
-
-    def compact
-      parser.memo_compact
     end
 
     def derive(input_token)
@@ -517,6 +453,56 @@ module DerParser
   class HeadCat < Cat
     def call(input)
       [input] + @seed
+    end
+  end
+
+  class Compact < Reduction
+    include Memoizer
+
+    def compact(parser)
+      call(parser)
+    end
+
+    def call(parser)
+      if parser.empty?
+        parser
+      elsif parser.eps?
+        parser
+      elsif parser.empty?
+        Parser.empty
+      elsif parser.nullable?
+        EpsilonPrimeParser.new(parser.parse_null)
+      elsif parser.token_parser?
+        parser
+      elsif parser.union? 
+        if parser.left_parser.empty?
+          compact(parser.right_parser)
+        elsif parser.right_parser.empty?
+          compact(parser.left_parser)
+        else
+          compact(parser.left_parser).or(compact(parser.right_parser))
+        end
+      elsif parser.sequence?
+        if parser.first_parser.nullable?
+          ReductionParser.new(compact(parser.second_parser), Cat.new(parser.first_parser))
+        elsif parser.second_parser.nullable?
+          ReductionParser.new(compact(parser.first_parser), HeadCat.new(parser.second_parser))
+        else
+          compact(parser.first_parser).then(compact(parser.second_parser))
+        end
+      elsif parser.reducer?
+        if parser.parser.empty?
+          Parser.empty
+        elsif parser.parser.nullable?
+          EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reduction_function.call(t)})
+        elsif parser.parser.sequence? and parser.parser.first_parser.nullable?
+          ReductionParser.new(compact(parser.parser.second_parser), Cat.new(parser.parser.first_parser))
+        elsif parser.parser.reducer?
+          ReductionParser.new(compact(parser.parser), Compose.new(parser.reduction_function, parser.parser.reduction_function))
+        else
+          ReductionParser.new(compact(parser.parser), parser.reduction_function)
+        end
+      end
     end
   end
 end
