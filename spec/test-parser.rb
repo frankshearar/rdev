@@ -237,117 +237,117 @@ module DerParser
     end
 
     it "should == parser consuming == token" do
-      TokenParser.new('foo', :lit).should == TokenParser.new('foo', :lit)
+      TokenParser.new('foo').should == TokenParser.new('foo')
     end
 
     it "should not == parser consuming different == tokens" do
       pred_1 = ->x{x}
       pred_2 = ->x{x.to_s}
 
-      TokenParser.new(pred_1, :lit).should_not == TokenParser.new(pred_2, :lit)
-      TokenParser.new(pred_1, :lit).should_not == TokenParser.new(pred_1, :literal)
+      TokenParser.new(pred_1).should_not == TokenParser.new(pred_2)
+      TokenParser.new(pred_1).should_not == TokenParser.new(pred_1)
     end
 
     it "should not == nil" do
-      TokenParser.new('foo', :lit).should_not == nil
+      TokenParser.new('foo').should_not == nil
     end
   end
 
   describe "Equality: union parser" do
     it "should not == nil" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == nil
     end
 
     it "should == itself" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should == u
     end
 
     it "should == when parts are ==" do
-      a = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      b = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      a = UnionParser.new(Parser.empty, TokenParser.new('foo'))
+      b = UnionParser.new(Parser.empty, TokenParser.new('foo'))
 
       a.should == b
       b.should == a
     end
 
     it "should not == empty" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == Parser.empty
       Parser.empty.should_not == u
     end
 
     it "should not == eps" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == Parser.eps
       Parser.eps.should_not == u
     end
 
     it "should not == eps*" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == EpsilonPrimeParser.new(Set[])
       EpsilonPrimeParser.new(Set[]).should_not == u
     end
 
     it "should not == token parsers" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      t = TokenParser.new('foo', :lit)
+      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
+      t = TokenParser.new('foo')
       u.should_not == t
       t.should_not == u
     end
 
     it "should not == nil" do
-      UnionParser.new(Parser.empty, TokenParser.new('foo', :lit)).should_not == nil
+      UnionParser.new(Parser.empty, TokenParser.new('foo')).should_not == nil
     end
   end
 
   describe "Equality: sequence parser" do
     it "should not == nil" do
-      s = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      s = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       s.should_not == nil
     end
 
     it "should == itself" do
-      s = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      s = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       s.should == s
     end
 
     it "should == when parts are ==" do
-      a = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      b = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      a = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
+      b = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
 
       a.should == b
       b.should == a
     end
 
     it "should not == empty" do
-      u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == Parser.empty
       Parser.empty.should_not == u
     end
 
     it "should not == eps" do
-      u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == Parser.eps
       Parser.eps.should_not == u
     end
 
     it "should not == eps*" do
-      u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
+      u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == EpsilonPrimeParser.new(Set[])
       EpsilonPrimeParser.new(Set[]).should_not == u
     end
 
     it "should not == token parsers" do
-      u = SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit))
-      t = TokenParser.new('foo', :lit)
+      u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
+      t = TokenParser.new('foo')
       u.should_not == t
       t.should_not == u
     end
 
     it "should not == nil" do
-      SequenceParser.new(Parser.empty, TokenParser.new('foo', :lit)).should_not == nil
+      SequenceParser.new(Parser.empty, TokenParser.new('foo')).should_not == nil
     end
   end
 

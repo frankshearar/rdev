@@ -66,11 +66,9 @@ module DerParser
   # a unary block that returns a boolean).
   class TokenParser < Parser
     attr_reader :predicate
-    attr_reader :token_class
 
-    def initialize(predicate, token_class)
+    def initialize(predicate)
       @predicate = predicate
-      @token_class = token_class
     end
 
     def ==(obj)
@@ -80,9 +78,6 @@ module DerParser
         return false
       end
 
-      if (token_class != obj.token_class) then
-        return false
-      end
       true
     end
 
@@ -115,11 +110,11 @@ module DerParser
     end
 
     def self.literal(literal)
-      token_matching(Equals.new(literal), :literal)
+      token_matching(Equals.new(literal))
     end
 
-    def self.token_matching(predicate, token_class)
-      TokenParser.new(predicate, token_class)
+    def self.token_matching(predicate)
+      TokenParser.new(predicate)
     end
 
     def empty
