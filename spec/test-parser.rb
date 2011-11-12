@@ -60,12 +60,6 @@ module DerParser
       Parser.eps.compact.should == Parser.eps
     end
 
-    it "should compact eps* to itself" do
-      t = Parser.literal('a').then(Parser.literal('b'))
-      eps_star = EpsilonPrimeParser.new(Set[])
-      eps_star.compact.should == eps_star
-    end
-
     it "should compact a token parser to itself" do
       lit = Parser.literal('a')
       lit.compact.should == lit
@@ -182,47 +176,24 @@ module DerParser
   end
 
   describe "Equality: eps parser" do
-    it "should not == nil" do
-      EpsilonParser.new.should_not == nil
+    it "should == another eps parser on the same language" do
+      EpsilonParser.new(Set[]).should == EpsilonParser.new(Set[])
     end
 
-    it "should == itself" do
-      e = EpsilonParser.new
-      e.should == e
-    end
-
-    it "should == eps parser" do
-      EpsilonParser.new.should == EpsilonParser.new
-    end
-
-    it "should not == nil" do
-      EpsilonParser.new.should_not == nil
-    end
-
-    it "should == parser delegating to eps" do
-      Parser.eps.should == DelegateParser.new(Parser.eps)
-    end
-  end
-
-  describe "Equality: eps* parser" do
-    it "should == another eps* parser on the same language" do
-      EpsilonPrimeParser.new(Set[]).should == EpsilonPrimeParser.new(Set[])
-    end
-
-    it "should not == eps* parser on a different language" do
-      EpsilonPrimeParser.new(Set[]).should == EpsilonPrimeParser.new(Set[1])
+    it "should not == eps parser on a different language" do
+      EpsilonParser.new(Set[]).should == EpsilonParser.new(Set[1])
     end
 
     it "should not == eps" do
-      EpsilonPrimeParser.new(Set[]).should_not == EpsilonParser.new
+      EpsilonParser.new(Set[]).should_not == EpsilonParser.new
     end
 
     it "should not == nil" do
-      EpsilonPrimeParser.new(Set[]).should_not == nil
+      EpsilonParser.new(Set[]).should_not == nil
     end
 
     it "eps* parser should == parser delegating to eps*" do
-      EpsilonPrimeParser.new(Set[]).should == DelegateParser.new(EpsilonPrimeParser.new(Set[]))
+      EpsilonParser.new(Set[]).should == DelegateParser.new(EpsilonParser.new(Set[]))
     end
   end
 
@@ -284,12 +255,6 @@ module DerParser
       Parser.eps.should_not == u
     end
 
-    it "should not == eps*" do
-      u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
-      u.should_not == EpsilonPrimeParser.new(Set[])
-      EpsilonPrimeParser.new(Set[]).should_not == u
-    end
-
     it "should not == token parsers" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       t = TokenParser.new('foo')
@@ -333,12 +298,6 @@ module DerParser
       Parser.eps.should_not == u
     end
 
-    it "should not == eps*" do
-      u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
-      u.should_not == EpsilonPrimeParser.new(Set[])
-      EpsilonPrimeParser.new(Set[]).should_not == u
-    end
-
     it "should not == token parsers" do
       u = SequenceParser.new(Parser.empty, TokenParser.new('foo'))
       t = TokenParser.new('foo')
@@ -362,11 +321,6 @@ module DerParser
 
     it "should not == eps parser" do
       ReductionParser.new(Parser.eps, ->x{x}).should_not == Parser.eps
-    end
-
-    it "should not == eps* parser" do
-      prime = EpsilonPrimeParser.new(Set[])
-      ReductionParser.new(prime, ->x{x}).should_not == prime
     end
 
     it "should not == token parser" do
@@ -417,10 +371,6 @@ module DerParser
 
     it "should == delegated parser of same language (eps)" do
       DelegateParser.new(Parser.eps).should == Parser.eps
-    end
-
-    it "should == delegated parser of same language (eps*)" do
-      DelegateParser.new(EpsilonPrimeParser.new(Set[])).should == EpsilonPrimeParser.new(Set[])
     end
 
     it "should == delegated parser of same language (token parser)" do

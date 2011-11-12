@@ -24,8 +24,14 @@ module DerParser
 
   # The language that accepts the empty string.
   class EpsilonParser < Parser
+    attr_reader :parse_forest
+
+    def initialize(a_set)
+      @parse_forest = a_set
+    end
+
     def ==(obj)
-      !obj.nil? and obj.eps?
+      !obj.nil? and obj.eps? and (parse_forest == obj.parse_forest)
     end
 
     def eps?
@@ -34,23 +40,6 @@ module DerParser
 
     def derive(input_token)
       Parser.empty
-    end
-  end
-
-  # An empty string that produces a tree. Only appears during parsing.
-  class EpsilonPrimeParser < EpsilonParser
-    attr_reader :parse_trees
-
-    def initialize(parse_trees)
-      @parse_trees = parse_trees
-    end
-
-    def ==(obj)
-      !obj.nil? and obj.respond_to?(:eps_prime?) and obj.eps_prime?
-    end
-
-    def eps_prime?
-      true
     end
   end
 
@@ -87,7 +76,7 @@ module DerParser
     include Memoizer
 
     @@EMPTY = EmptyParser.new
-    @@EPS = EpsilonParser.new
+    @@EPS = EpsilonParser.new(Set[])
 
     def self.empty
       @@EMPTY
@@ -118,10 +107,6 @@ module DerParser
     end
 
     def eps?
-      false
-    end
-
-    def eps_prime?
       false
     end
 
@@ -196,7 +181,7 @@ module DerParser
     end
 
     def compact
-      Compact.call(self)
+      Compact.new.call(self)
     end
 
     def derive(input_token)
@@ -225,8 +210,6 @@ module DerParser
       LeastFixedPoint.run(parser, empty_set) { |x|
         if parser.empty? then
           empty_set
-        elsif parser.eps_prime? then
-          parser.parser
         elsif parser.eps? then
           Set[parser]
         elsif parser.token_parser? then
@@ -333,7 +316,7 @@ module DerParser
 
     def ==(obj)
       return false if obj.nil?
-      [:eps?, :empty?, :eps_prime?, :token_parser?, \
+      [:eps?, :empty?, :token_parser?, \
        :union?, :sequence?, :reducer?].inject(true) { |answer, name|
         answer or (self.send(name) and obj.send(name))
       }
@@ -345,10 +328,6 @@ module DerParser
 
     def eps?
       parser.eps?
-    end
-
-    def eps_prime?
-      parser.eps_prime?
     end
 
     def token_parser?
@@ -471,7 +450,7 @@ module DerParser
       elsif parser.empty?
         Parser.empty
       elsif parser.nullable?
-        EpsilonPrimeParser.new(parser.parse_null)
+        EpsilonParser.new(parser.parse_null)
       elsif parser.token_parser?
         parser
       elsif parser.union? 
@@ -494,7 +473,7 @@ module DerParser
         if parser.parser.empty?
           Parser.empty
         elsif parser.parser.nullable?
-          EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reduction_function.call(t)})
+          EpsilonParser.new(parser.parser.parse_null.collect {|t| parser.reduction_function.call(t)})
         elsif parser.parser.sequence? and parser.parser.first_parser.nullable?
           ReductionParser.new(compact(parser.parser.second_parser), Cat.new(parser.parser.first_parser))
         elsif parser.parser.reducer?
