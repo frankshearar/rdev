@@ -508,19 +508,14 @@ module DerParser
         end
       elsif parser.reducer?
         if parser.parser.empty?
-          puts "empty? in a reducer"
           Parser.empty
         elsif parser.parser.nullable?
-          puts "nullable in a reducer"
           EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reducer.call(t)})
         elsif parser.parser.sequence? and parser.parser.first.nullable?
-          puts "sequence in a reducer"
           ReductionParser.new(compact(parser.parser.second), Cat.new(parser.parser.first))
         elsif parser.parser.reducer?
-          puts "nested reducers"
           ReductionParser.new(compact(parser.parser), Compose.new(parser.reducer, parser.parser.reducer))
         else
-          puts "#{parser.parser.class.name} in a reducer"
           ReductionParser.new(compact(parser.parser), parser.reducer)
         end
       end
