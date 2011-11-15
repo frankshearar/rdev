@@ -133,7 +133,7 @@ module DerParser
       reduction = ReductionParser.new(a, Identity.new)
       cmpct = reduction.compact
       cmpct.should be_reducer
-      cmpct.parser.should == a.second_parser
+      cmpct.parser.should == a.second
     end
 
     it "should compact nested reductions as a composition of the reduction functions" do
@@ -142,9 +142,14 @@ module DerParser
       outer = ReductionParser.new(inner, ->x{x + 1})
 
       cmpct = outer.compact
-      cmpct.reduction_function.call(1).should == 3
+      # Compacting red(token) --> red(token), with the same reducing function
+      # Compacting red(red(token)) --> red2(token) where red2's reducing
+      # function is the composition of the two original functions.
+
+      cmpct.reducer.call(1).should == 3
       cmpct.should be_reducer
-      cmpct.parser.should be_token_parser
+      cmpct.parser.should be_reducer
+      cmpct.parser.parser.should be_token_parser
     end
   end
 
@@ -212,11 +217,11 @@ module DerParser
     end
 
     it "should not == parser consuming different == tokens" do
-      pred_1 = ->x{x}
-      pred_2 = ->x{x.to_s}
+      pred_1 = Identity.new
+      pred_2 = Adder.new(1)
 
       TokenParser.new(pred_1).should_not == TokenParser.new(pred_2)
-      TokenParser.new(pred_1).should_not == TokenParser.new(pred_1)
+      TokenParser.new(pred_2).should_not == TokenParser.new(pred_1)
     end
 
     it "should not == nil" do
@@ -570,16 +575,16 @@ module DerParser
   end
 
   describe Compose do
-    it "should permit composition of Reductions" do
+    it "should permit composition of Callables" do
       Compose.new(Identity.new, Identity.new).call(1).should == 1
       Compose.new(Adder.new(1), Adder.new(2)).call(3).should == 6
     end
 
-    it "should permit composition of Procs with Reductions" do
+    it "should permit composition of Procs with Callables" do
       Compose.new(->x{x * 2}, Adder.new(1)).call(3).should == 8
     end
 
-    it "should permit composition of Reductions with Procs" do
+    it "should permit composition of Callables with Procs" do
       Compose.new(Adder.new(1), ->x{x * 2}).call(3).should == 7
     end
 
