@@ -31,7 +31,13 @@ module DerParser
     end
 
     def ==(obj)
-      !obj.nil? and obj.eps? and (parse_forest == obj.parse_forest)
+      return false unless !obj.nil? and obj.eps?
+
+      if (parse_forest != obj.parse_forest)
+        return false
+      end
+
+      true
     end
 
     def eps?
@@ -338,6 +344,10 @@ module DerParser
       parser.left
     end
 
+    def parse_forest
+      parser.parse_forest
+    end
+
     def right
       parser.right
     end
@@ -469,7 +479,7 @@ module DerParser
         EpsilonParser.new(parser.parse_null)
       elsif parser.token_parser?
         parser
-      elsif parser.union? 
+      elsif parser.union?
         if parser.left.empty?
           compact(parser.right)
         elsif parser.right.empty?
