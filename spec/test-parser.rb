@@ -148,9 +148,14 @@ module DerParser
       outer = ReductionParser.new(inner, ->x{x + 1})
 
       cmpct = outer.compact
+      # Compacting red(token) --> red(token), with the same reducing function
+      # Compacting red(red(token)) --> red2(token) where red2's reducing
+      # function is the composition of the two original functions.
+
       cmpct.reducer.call(1).should == 3
       cmpct.should be_reducer
-      cmpct.parser.should be_token_parser
+      cmpct.parser.should be_reducer
+      cmpct.parser.parser.should be_token_parser
     end
   end
 
