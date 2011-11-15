@@ -169,7 +169,7 @@ module DerParser
 
     it "should not == eps parser" do
       empty = EmptyParser.new
-      eps = EpsilonParser.new
+      eps = Parser.eps
 
       empty.should_not == eps
       eps.should_not == empty
@@ -185,19 +185,15 @@ module DerParser
       EpsilonParser.new(Set[]).should == EpsilonParser.new(Set[])
     end
 
-    it "should not == eps parser on a different language" do
-      EpsilonParser.new(Set[]).should == EpsilonParser.new(Set[1])
-    end
-
-    it "should not == eps" do
-      EpsilonParser.new(Set[]).should_not == EpsilonParser.new
+    it "should not == eps parser on a different parse forest" do
+      EpsilonParser.new(Set[]).should_not == EpsilonParser.new(Set[1])
     end
 
     it "should not == nil" do
       EpsilonParser.new(Set[]).should_not == nil
     end
 
-    it "eps* parser should == parser delegating to eps*" do
+    it "should == parser delegating to eps" do
       EpsilonParser.new(Set[]).should == DelegateParser.new(EpsilonParser.new(Set[]))
     end
   end
