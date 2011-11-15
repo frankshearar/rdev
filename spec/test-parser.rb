@@ -241,11 +241,11 @@ module DerParser
     end
 
     it "should not == parser consuming different == tokens" do
-      pred_1 = ->x{x}
-      pred_2 = ->x{x.to_s}
+      pred_1 = Identity.new
+      pred_2 = Adder.new(1)
 
       TokenParser.new(pred_1).should_not == TokenParser.new(pred_2)
-      TokenParser.new(pred_1).should_not == TokenParser.new(pred_1)
+      TokenParser.new(pred_2).should_not == TokenParser.new(pred_1)
     end
 
     it "should not == nil" do
