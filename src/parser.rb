@@ -351,6 +351,22 @@ module DerParser
       parser.eps_prime?
     end
 
+    def first
+      parser.first
+    end
+
+    def left
+      parser.left
+    end
+
+    def right
+      parser.right
+    end
+
+    def second
+      parser.second
+    end
+
     def token_parser?
       parser.token_parser?
     end
