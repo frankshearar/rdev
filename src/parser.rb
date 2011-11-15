@@ -196,7 +196,7 @@ module DerParser
     end
 
     def compact
-      Compact.call(self)
+      Compact.new.call(self)
     end
 
     def derive(input_token)
