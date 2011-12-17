@@ -1,4 +1,4 @@
-require_relative 'weak-hash'
+require 'rdev/weak-hash'
 
 module DerParser
   # A simple analogue to a dynamic variable. Give it a hash of

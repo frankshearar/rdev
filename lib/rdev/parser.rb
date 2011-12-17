@@ -1,5 +1,5 @@
-require_relative 'fixed-point'
-require_relative 'memoize'
+require 'rdev/fixed-point'
+require 'rdev/memoize'
 require 'set'
 
 module DerParser

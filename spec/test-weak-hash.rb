@@ -1,4 +1,4 @@
-require_relative '../src/weak-hash.rb'
+require 'rdev/weak-hash.rb'
 
 describe WeakHash do
   before :each do
