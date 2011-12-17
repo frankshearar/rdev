@@ -491,20 +491,27 @@ module DerParser
       derivative.compact.should be_empty_parser
     end
 
-    # it "D_c(A union B) == D_c(A) union D_c(B)" do
-    #   fail
-    # end
+    it "D_c(A union B) == D_c(A) union D_c(B)" do
+      a = Parser.literal('foo')
+      b = Parser.literal('bar')
+      language = a.or(b)
 
-    # it "D_c(NotNullable then B) == D_c(NotNullable) then B" do
-    #   fail
-    # end
+      language.derive('f').should == a.derive('f').or(b.derive('f'))
+    end
 
-    # it "D_c(Nullable then B) == (D_c(Nullable) then B) union D_c(B)" do
-    #   b = Parser.literal('bar')
-    #   nullable = Parser.literal('foo').union(Parser.empty)
-    #   language = a.then(b)
-    #   language.derive('a').should == nullable.derive('a').then(b)
-    # end
+    it "D_c(NotNullable then B) == D_c(NotNullable) then B" do
+      a = Parser.literal('foo')
+      b = Parser.literal('bar')
+      language = a.then(b)
+      language.derive('f').should == a.derive('a').then(b)
+    end
+
+    it "D_c(Nullable then B) == (D_c(Nullable) then B) union D_c(B)" do
+      b = Parser.literal('bar')
+      nullable = Parser.literal('foo').union(Parser.eps)
+      language = nullable.then(b)
+      language.derive('a').should == b.derive('a').or(nullable.derive('a').then(b))
+    end
 
     it "D_c(reduction(A)) == D_c(A)" do
       a = Parser.literal('bar')

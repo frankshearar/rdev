@@ -210,7 +210,7 @@ module DerParser
     end
 
     def derive(input_token)
-      raise "Not implemented yet for #{self.class.name}"
+      raise "derive not implemented yet for #{self.class.name}"
     end
 
     def parse(input, compact = Identity.new, steps = false, debug = false)
@@ -309,6 +309,14 @@ module DerParser
       return false unless obj.sequence?
 
       (first == obj.first) and (second == obj.second)
+    end
+
+    def derive(input_token)
+      if first.nullable? then
+        second.derive(input_token).or(first.derive(input_token).then(second))
+      else
+        first.derive(input_token).then(second)
+      end
     end
   end
 
