@@ -183,6 +183,16 @@ module DerParser
       }
     end
 
+    def recognises?(stream)
+      trampoline(self, stream) { |parser, stream|
+        if not stream.next? then
+          nullable?
+        else
+          ->{derive(stream.next).recognises?(stream.remaining)}
+        end
+      }
+    end
+
     def or(alternate_parser)
       union(alternate_parser)
     end
@@ -241,6 +251,15 @@ module DerParser
           }
         end
       }
+    end
+
+    private
+    def trampoline(*args, &block)
+      result = block.call(*args)
+      while result.kind_of?(Proc) do
+        result = result.call
+      end
+      result
     end
   end
 
