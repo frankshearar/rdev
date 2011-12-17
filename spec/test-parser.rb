@@ -277,6 +277,14 @@ module DerParser
       b.should == a
     end
 
+    it "should == when parts are ==, regardless of order" do
+      a = UnionParser.new(Parser.empty, TokenParser.new('foo'))
+      b = UnionParser.new(TokenParser.new('foo'), Parser.empty)
+
+      a.should == b
+      b.should == a
+    end
+
     it "should not == empty" do
       u = UnionParser.new(Parser.empty, TokenParser.new('foo'))
       u.should_not == Parser.empty

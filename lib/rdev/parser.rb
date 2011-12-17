@@ -260,7 +260,11 @@ module DerParser
     def ==(obj)
       return false if obj.nil?
       return false unless obj.union?
-      (left == obj.left) and (right == obj.right)
+
+      # a | b == b | a
+      same_order = (left == obj.left) and (right == obj.right)
+      diff_order = (left == obj.right) and (right == obj.left)
+      same_order or diff_order
     end
 
     def derive(input_token)
