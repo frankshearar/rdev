@@ -1,5 +1,5 @@
-require_relative '../src/parser'
-require_relative '../src/stream.rb'
+require 'rdev/parser'
+require 'rdev/stream.rb'
 
 module DerParser
   describe "Parsing" do

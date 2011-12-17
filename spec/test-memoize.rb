@@ -1,4 +1,4 @@
-require_relative '../src/memoize'
+require 'rdev/memoize'
 
 module DerParser
   class MemoTest

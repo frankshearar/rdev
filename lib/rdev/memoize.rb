@@ -1,4 +1,4 @@
-require_relative 'weak-hash.rb'
+require 'rdev/weak-hash.rb'
 
 module DerParser
   # A basic memoiser: mix it into a class, and you can memoise message sends.

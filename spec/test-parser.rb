@@ -1,4 +1,4 @@
-require_relative '../src/parser.rb'
+require 'rdev/parser.rb'
 
 module DerParser
   describe "Parser" do

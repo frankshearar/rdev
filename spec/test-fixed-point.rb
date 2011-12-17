@@ -1,4 +1,4 @@
-require_relative '../src/fixed-point'
+require 'rdev/fixed-point'
 
 module DerParser
   describe "'Dynamic variables'" do
