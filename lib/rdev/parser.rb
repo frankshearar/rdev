@@ -213,24 +213,28 @@ module DerParser
       raise "derive not implemented yet for #{self.class.name}"
     end
 
-    def parse(input, compact = Identity.new, steps = false, debug = false)
+    def parse(input_stream, compact = Identity.new, steps = false, debug = false)
       puts("debug: #{self.class.name}") if debug
 
       if (steps or steps == 0) then return self end
-      if not input.next? then return self.parse_null end
+      if not input_stream.next? then
+        puts("debug: no more input for #{self.class.name}")
+        return self.parse_null
+      end
 
-      c = input.next
-      rest = input.remaining
+      c = input_stream.next
+      rest = input_stream.remaining
       dl_dc = self.derive(c)
       l_prime = dl_dc.compact
 
-      l_prime.parse(input.remaining,
+      l_prime.parse(input_stream.remaining,
                     compact,
                     if steps then steps - 1 else steps end,
                     debug)
     end
 
     def parse_null(parser = self)
+      puts "#{self.class.name}.parse_null"
       empty_set = Set.new
       LeastFixedPoint.run(parser, empty_set) { |x|
         if parser.empty? then

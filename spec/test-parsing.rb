@@ -26,9 +26,9 @@ module DerParser
       ab.recognises?(StringStream.new('abc')).should be_false
     end
 
-    # it "should accept the empty language" do
-    #   Parser.eps.parse(StringStream.new('')).should == Set[]
-    # end
+    it "should accept the empty language" do
+      Parser.eps.parse(StringStream.new('')).should == Set[]
+    end
 
     # it "should accept a token" do
     #   Parser.literal('f').parse(StringStream.new('f'), Identity.new, false, true).should == Set['f']
