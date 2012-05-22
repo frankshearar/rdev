@@ -30,14 +30,12 @@ module DerParser
     end
 
     it "should permit normal calling of a method" do
-      value = 1 + 2
       @memo.call(:+, 1, 2).should == 1 + 2
     end
 
     it "should memoise the result of a method call" do
       test = MemoTest.new
-      @memo.call(:test_method, test, 1, 2)
-      @memo.call(:test_method, test, 1, 2)
+      2.times { @memo.call(:test_method, test, 1, 2) }
       test.calculation_count.should == 1
     end
 
@@ -47,21 +45,31 @@ module DerParser
       result.should == 6
     end
 
+    it "should memoise the result of a method call using a reference to a block" do
+      block = Proc.new { |n| n + 3}
+      test = MemoTest.new
+      5.times {
+        @memo.call(:block_method, test, 1, 2, &block)
+      }
+
+      test.calculation_count.should == 1
+    end
+
     it "should not memoise the result of a method call using a block" do
       # In Ideal Land this would work: treat the block as just another
       # parameter so that repeated invocations of a method with the same
       # arguments + block would memoise. However, each iteration in the
-      # loop below creates a whole new block. (The same is not true of Procs,
-      # of course: ->{1} == ->{1} is true.)
+      # loop below creates a whole new block.
       #
       # This spec thus documents actual behaviour, rather than desired
       # behaviour.
       test = MemoTest.new
-      (1..5).each {|unused|
+      n = 5
+      n.times {
         @memo.call(:block_method, test, 1, 2) { |n| n + 3 }
       }
 
-      test.calculation_count.should == 5
+      test.calculation_count.should == n
     end
 
     it "should not memoise messages sent to another object" do
