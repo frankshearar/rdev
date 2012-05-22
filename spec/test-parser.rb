@@ -614,6 +614,20 @@ module DerParser
     end
   end
 
+  describe DelegateParser do
+    it "should delegate left to the underlying parser" do
+      u = UnionParser.new(Parser.empty, Parser.eps)
+      d = DelegateParser.new(u)
+      d.left.should == u.left
+    end
+
+    it "should delegate right to the underlying parser" do
+      u = UnionParser.new(Parser.empty, Parser.eps)
+      d = DelegateParser.new(u)
+      d.right.should == u.right
+    end
+  end
+
   describe Equals do
     it "should return true for == objects" do
       Equals.new(1).call(1).should be_true
