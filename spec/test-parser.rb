@@ -4,10 +4,12 @@ module DerParser
   describe "Parser" do
     it "empty should be a flyweight" do
       Parser.empty.should == Parser.empty
+      Parser.new.empty.should == Parser.empty
     end
 
     it "eps should be a flyweight" do
       Parser.eps.should == Parser.eps
+      Parser.new.eps.should == Parser.eps
     end
 
     it "empty parser should be marked as such" do

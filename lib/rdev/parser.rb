@@ -106,11 +106,11 @@ module DerParser
     end
 
     def empty
-      self.empty
+      self.class.empty
     end
 
     def eps
-      self.eps
+      self.class.eps
     end
 
     def empty_parser?
