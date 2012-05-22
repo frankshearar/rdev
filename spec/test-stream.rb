@@ -1,6 +1,26 @@
 require 'rdev/stream.rb'
 
 module DerParser
+  describe Stream do
+    it "should force you to implement :next?" do
+      ->{
+        Stream.new.next?
+      }.should raise_error
+    end
+
+    it "should force you to implement :next" do
+      ->{
+        Stream.new.next
+      }.should raise_error
+    end
+
+    it "should force you to implement :remaining" do
+      ->{
+        Stream.new.remaining
+      }.should raise_error
+    end
+  end
+
   describe StringStream do
     before :each do
       @stream = StringStream.new('foo')
