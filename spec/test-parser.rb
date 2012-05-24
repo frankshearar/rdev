@@ -1,7 +1,31 @@
 require 'rdev/parser.rb'
 
 module DerParser
-  describe "Parser" do
+  describe Parser do
+    it "should mark :empty? as abstract" do
+      ->{
+        Parser.new.empty?
+      }.should raise_error(Unimplemented) { |e|
+        e.message.should include(Parser.name)
+      }
+    end
+
+    it "should mark :nullable? as abstract" do
+      ->{
+        Parser.new.nullable?
+      }.should raise_error(Unimplemented) { |e|
+        e.message.should include(Parser.name)
+      }
+    end
+
+    it "should mark :derive as abstract" do
+      ->{
+        Parser.new.derive(:c)
+      }.should raise_error(Unimplemented) { |e|
+        e.message.should include(Parser.name)
+      }
+    end
+
     it "empty should be a flyweight" do
       Parser.empty.should == Parser.empty
       Parser.new.empty.should == Parser.empty
@@ -653,6 +677,16 @@ module DerParser
       u = UnionParser.new(Parser.empty, Parser.eps)
       d = DelegateParser.new(u)
       d.right.should == u.right
+    end
+  end
+
+  describe Callable do
+    it "should mark :call as abstract" do
+      ->{
+        Callable.new.call(1)
+      }.should raise_error(Unimplemented) { |e|
+        e.message.should include(Callable.name)
+      }
     end
   end
 

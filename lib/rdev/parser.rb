@@ -175,7 +175,7 @@ module DerParser
           empty?(x.parser) or x.parser.nullable?
           true
         else
-          raise "empty? not defined for #{parser.class.name}"
+          raise Unimplemented.new("empty? not defined for #{parser.class.name}")
         end
       }
     end
@@ -201,7 +201,7 @@ module DerParser
         elsif x.kind_of?(NullableParser)
           true
         else
-          raise "nullable? not defined for #{parser.class.name}"
+          raise Unimplemented.new("nullable? not defined for #{parser.class.name}")
         end
       }
     end
@@ -233,7 +233,7 @@ module DerParser
     end
 
     def derive(input_token)
-      raise "derive not implemented yet for #{self.class.name}"
+      raise Unimplemented.new("derive not implemented yet for #{self.class.name}")
     end
 
     def parse(input_stream, compact = Identity.new, steps = false, debug = false)
@@ -475,7 +475,7 @@ module DerParser
   # check for equality between function-like things.
   class Callable
     def call(input)
-      raise "Not implemented yet for #{self.class.name}"
+      raise Unimplemented.new("Not implemented yet for #{self.class.name}")
     end
   end
 
@@ -603,5 +603,9 @@ module DerParser
         end
       end
     end
+  end
+
+  # The exception you throw when something that needs implementing, isn't.
+  class Unimplemented < Exception
   end
 end
