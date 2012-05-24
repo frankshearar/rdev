@@ -51,6 +51,14 @@ module DerParser
     it "literal produces a token parser" do
       Parser.literal('foo').should be_token_parser
     end
+
+    it "nullable produces a nullable parser" do
+      Parser.literal('foo').nullable.should be_nullable
+    end
+
+    it "star produces a repetition parser" do
+      Parser.literal('a').star.should be_star
+    end
   end
 
   describe "Compaction" do
@@ -76,6 +84,8 @@ module DerParser
     it "should compact a nullable grammar to 0" do
       nullable = UnionParser.new(Parser.empty, Parser.empty)
       nullable.compact.should == Parser.empty
+
+      Parser.literal('a').star.compact.should == Parser.empty
     end
 
     it "should compact 0 or A to A compact" do
@@ -468,6 +478,11 @@ module DerParser
       Parser.eps.derive('a').should be_empty_parser
     end
 
+    it "D_c(Nullable) == 0" do
+      NullableParser.new(Parser.literal('f')).derive('a').should be_empty_parser
+      NullableParser.new(Parser.literal('f')).derive('f').should be_empty_parser
+    end
+
     it "D_c(c) == eps" do
       Parser.literal('f').derive('f').should be_eps
     end
@@ -505,7 +520,7 @@ module DerParser
       a = Parser.literal('foo')
       b = Parser.literal('bar')
       language = a.then(b)
-      language.derive('f').should == a.derive('a').then(b)
+      language.derive('f').should == (a.nullable.then(b.derive('f'))).or(a.derive('f').then(b))
     end
 
     it "D_c(Nullable then B) == (D_c(Nullable) then B) union D_c(B)" do
@@ -520,6 +535,11 @@ module DerParser
       red = ReductionParser.new(a, ->x{x})
       red.derive('a').should == a.derive('a')
       red.derive('bar').should == a.derive('bar')
+    end
+
+    it "D_c(delegate(p)) == D_c(p)" do
+      p = Parser.literal('foo')
+      DelegateParser.new(p).derive('f').should == p.derive('f')
     end
 
     # it "D_c(A not) == D_c(A) not" do
@@ -572,6 +592,10 @@ module DerParser
     it "non-nullable parser followed by nullable parser is not nullable" do
       Parser.eps.then(Parser.empty).nullable?.should be_false
     end
+
+    it "star parser is not nullable" do
+      Parser.literal('a').star.nullable?.should be_true
+    end
   end
 
   describe "Is the language accepted by this parser the empty set?" do
@@ -611,6 +635,10 @@ module DerParser
     it "the sequence of a non-empty parser and an empty parser accepts the empty set" do
       Parser.eps.then(Parser.empty).empty?.should be_true
       Parser.empty.then(Parser.eps).empty?.should be_true
+    end
+
+    it "star parser accepts the empty set" do
+      Parser.literal('a').star.empty?.should be_true
     end
   end
 

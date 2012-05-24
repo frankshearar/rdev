@@ -30,8 +30,8 @@ module DerParser
       Parser.eps.parse(StringStream.new('')).should == Set[]
     end
 
-    # it "should accept a token" do
-    #   Parser.literal('f').parse(StringStream.new('f'), Identity.new, false, true).should == Set['f']
-    # end
+    it "should accept a single token language" do
+      Parser.literal('c').parse(StringStream.new('c')).should == Set['c']
+    end
   end
 end

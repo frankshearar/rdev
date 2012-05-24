@@ -41,8 +41,8 @@ module DerParser
   class EpsilonPrimeParser < EpsilonParser
     attr_reader :parse_trees
 
-    def initialize(parse_trees)
-      @parse_trees = parse_trees
+    def initialize(set_of_parse_trees)
+      @parse_trees = set_of_parse_trees
     end
 
     def ==(obj)
@@ -78,8 +78,11 @@ module DerParser
     end
 
     def derive(input_token)
-      return Parser.eps if @predicate.call(input_token)
-      Parser.empty
+      if @predicate.call(input_token) then
+        EpsilonPrimeParser.new(Set[input_token])
+      else
+        Parser.empty
+      end
     end
   end
 
@@ -125,7 +128,19 @@ module DerParser
       false
     end
 
+    def nullable
+      NullableParser.new(self)
+    end
+
     def reducer?
+      false
+    end
+
+    def star
+      RepetitionParser.new(self)
+    end
+
+    def star?
       false
     end
 
@@ -156,6 +171,9 @@ module DerParser
           empty?(x.first) or empty?(x.second)
         elsif x.reducer?
           empty?(x.parser)
+        elsif x.star?
+          empty?(x.parser) or x.parser.nullable?
+          true
         else
           raise "empty? not defined for #{parser.class.name}"
         end
@@ -164,6 +182,7 @@ module DerParser
 
     # Does parser accept the empty string?
     def nullable?(parser = self)
+#      NullableParser.new(parser)
       LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
           false
@@ -177,6 +196,10 @@ module DerParser
           nullable?(x.first) and nullable?(x.second)
         elsif x.reducer?
           nullable?(x.parser)
+        elsif x.star?
+          true
+        elsif x.kind_of?(NullableParser)
+          true
         else
           raise "nullable? not defined for #{parser.class.name}"
         end
@@ -234,23 +257,22 @@ module DerParser
     end
 
     def parse_null(parser = self)
-      puts "#{self.class.name}.parse_null"
       empty_set = Set.new
       LeastFixedPoint.run(parser, empty_set) { |x|
         if parser.empty? then
           empty_set
         elsif parser.eps_prime? then
-          parser.parser
+          parser.parse_trees
         elsif parser.eps? then
-          Set[parser]
+          Set[]
         elsif parser.token_parser? then
           empty_set
         elsif parser.union? then
-          parser.left.parse_null.merge(parser.right.parse_null)
+          parse_null(parser.left).merge(parse_null(parser.right))
         elsif parser.sequence? then
-          first.parse_null.zip(second.parse_null)
-        elsif parser.reduction? then
-          parser.parser.parse_null.collect {|t|
+          parse_null(parser.first).zip.parse_null(parser.second)
+        elsif parser.reducer? then
+          parse_null(parser.parser).collect {|t|
             parser.reducer.call(t)
           }
         end
@@ -264,6 +286,21 @@ module DerParser
         result = result.call
       end
       result
+    end
+  end
+
+  # I represent the nullability combinator: a reject-everything
+  # parser if @parser cannot parse empty, and the null parser
+  # if it can.
+  class NullableParser < Parser
+    attr_reader :parser
+
+    def initialize(parser)
+      @parser = parser
+    end
+
+    def derive(input_token)
+      Parser.empty
     end
   end
 
@@ -295,6 +332,18 @@ module DerParser
     end
   end
 
+  class RepetitionParser < Parser
+    attr_reader :parser
+
+    def initialize(parser)
+      @parser = parser
+    end
+
+    def star?
+      true
+    end
+  end
+
   class SequenceParser < Parser
     attr_reader :first
     attr_reader :second
@@ -316,11 +365,7 @@ module DerParser
     end
 
     def derive(input_token)
-      if first.nullable? then
-        second.derive(input_token).or(first.derive(input_token).then(second))
-      else
-        first.derive(input_token).then(second)
-      end
+      (first.derive(input_token).then(second)).or(first.nullable.then(second.derive(input_token)))
     end
   end
 
@@ -368,6 +413,9 @@ module DerParser
 
     def ==(obj)
       return false if obj.nil?
+
+      # TODO: This is stupid. We start with true so with OR we will ALWAYS return true!
+      # Rather just return "parser == obj"
       [:eps?, :empty?, :eps_prime?, :token_parser?, \
        :union?, :sequence?, :reducer?].inject(true) { |answer, name|
         answer or (self.send(name) and obj.send(name))
