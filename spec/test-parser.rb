@@ -105,9 +105,9 @@ module DerParser
       lit.compact.should == lit
     end
 
-    it "should compact a nullable grammar to 0" do
-      nullable = UnionParser.new(Parser.empty, Parser.empty)
-      nullable.compact.should == Parser.empty
+    it "should compact a nullable grammar to an eps" do
+      nullable = UnionParser.new(Parser.eps, Parser.eps)
+      nullable.compact.should == EpsilonPrimeParser.new(Set[])
     end
 
     it "should compact 0 or A to A compact" do
