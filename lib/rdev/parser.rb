@@ -59,6 +59,11 @@ module DerParser
   class TokenParser < Parser
     attr_reader :predicate
 
+    # Using a predicate destroys the ability to run the parser as a
+    # generator. If we use a literal/object here, we would need to
+    # express TokenParser.new(->x{[1,2,3].include?(x)}) as a nested
+    # set of UnionParsers: rather more inefficient. HOW much more
+    # inefficient? TODO!
     def initialize(predicate)
       @predicate = predicate
     end
@@ -525,6 +530,7 @@ module DerParser
     end
   end
 
+  # Concatenate some value to the BACK of a list.
   class Cat < Callable
     attr_reader :seed
 
@@ -549,6 +555,7 @@ module DerParser
     end
   end
 
+  # Concatenate some value to the FRONT of a list.
   class HeadCat < Cat
     def call(input)
       [input] + @seed
