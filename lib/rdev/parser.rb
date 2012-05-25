@@ -344,6 +344,13 @@ module DerParser
       @parser = parser
     end
 
+    def ==(obj)
+      return false if obj.nil?
+      return false unless obj.star?
+
+      parser == obj.parser
+    end
+
     def star?
       true
     end
@@ -410,69 +417,75 @@ module DerParser
 
   # A stand-in for a parser not yet defined. Handy for self-recursion.
   class DelegateParser < Parser
-    attr_accessor :parser
+    attr_accessor :delegated_parser
 
     def initialize(parser = nil)
-      @parser = parser
+      @delegated_parser = parser
     end
 
     def ==(obj)
       return false if obj.nil?
 
-      # TODO: This is stupid. We start with true so with OR we will ALWAYS return true!
-      # Rather just return "parser == obj"
-      [:eps?, :empty?, :eps_prime?, :token_parser?, \
-       :union?, :sequence?, :reducer?].inject(true) { |answer, name|
-        answer or (self.send(name) and obj.send(name))
-      }
+      delegated_parser == obj
     end
 
+    # Delegate methods. Some might say "just use method_missing, or
+    # a SimpleDelegate". I say "I want to be explicit in what this
+    # thing delegates".
     def empty_parser?
-      parser.empty_parser?
+      delegated_parser.empty_parser?
     end
 
     def eps?
-      parser.eps?
+      delegated_parser.eps?
     end
 
     def eps_prime?
-      parser.eps_prime?
+      delegated_parser.eps_prime?
     end
 
     def first
-      parser.first
+      delegated_parser.first
     end
 
     def left
-      parser.left
+      delegated_parser.left
     end
 
     def right
-      parser.right
+      delegated_parser.right
+    end
+
+    def parser
+      delegated_parser.parser
     end
 
     def second
-      parser.second
+      delegated_parser.second
+    end
+
+    def star?
+      delegated_parser.star?
     end
 
     def token_parser?
-      parser.token_parser?
+      delegated_parser.token_parser?
     end
 
     def union?
-      parser.union?
+      delegated_parser.union?
     end
 
     def reducer?
-      parser.reducer?
+      delegated_parser.reducer?
     end
 
     def sequence?
-      parser.sequence?
+      delegated_parser.sequence?
     end
 
     def derive(input_token)
-      parser.derive(input_token)
+      delegated_parser.derive(input_token)
     end
   end
 
@@ -574,6 +587,15 @@ module DerParser
         parser
       elsif parser.eps?
         parser
+      elsif parser.star?
+        # Derp's compaction puts this clause after empty?,
+        # but a *-parser will be empty? if its language is;
+        # this clause would otherwise not be reachable.
+        if parser.parser.empty?
+          EpsilonPrimeParser.new(Set[])
+        else
+          RepetitionParser.new(parser.parser.compact)
+        end
       elsif parser.empty?
         Parser.empty
       elsif parser.nullable?

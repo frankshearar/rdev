@@ -108,8 +108,6 @@ module DerParser
     it "should compact a nullable grammar to 0" do
       nullable = UnionParser.new(Parser.empty, Parser.empty)
       nullable.compact.should == Parser.empty
-
-      Parser.literal('a').star.compact.should == Parser.empty
     end
 
     it "should compact 0 or A to A compact" do
@@ -166,7 +164,7 @@ module DerParser
     it "should compact a delegate parser as the parser to which it delegates" do
       a = Parser.eps.then(Parser.literal('a'))
       delegate = DelegateParser.new
-      delegate.parser = a
+      delegate.delegated_parser = a
       delegate.compact.should == a.compact
     end
 
@@ -192,6 +190,15 @@ module DerParser
       cmpct.should be_reducer
       cmpct.parser.should be_reducer
       cmpct.parser.parser.should be_token_parser
+    end
+
+    it "should compact a * of an empty-accepting language to an eps parser" do
+      RepetitionParser.new(Parser.empty).compact.should == EpsilonPrimeParser.new(Set[])
+    end
+
+    it "should compact a * of a nullable language to an eps parser" do
+      nullable = Parser.eps.then(Parser.literal('a'))
+      RepetitionParser.new(nullable).compact.should == RepetitionParser.new(nullable.compact)
     end
   end
 
@@ -456,6 +463,34 @@ module DerParser
     it "should == reduction parser of same grammar and same reduction" do
       red = ->x{x}
       ReductionParser.new(Parser.empty, red).should == ReductionParser.new(Parser.empty, red)
+    end
+  end
+
+  describe "Equality: * parser" do
+    it "should == * of same language" do
+      Parser.empty.star.should == Parser.empty.star
+    end
+
+    it "should == delegate of * of same language" do
+      Parser.empty.star.should == DelegateParser.new(Parser.empty.star)
+    end
+
+    it "should not == nil" do
+      Parser.empty.star.should_not == nil
+    end
+
+    it "should not == * of different language" do
+      Parser.empty.star.should_not == Parser.eps.star
+    end
+
+    it "should not == other kinds of parsers" do
+      star = Parser.empty.star
+      star.should_not == Parser.empty
+      star.should_not == Parser.eps
+      star.should_not == Parser.literal('a')
+      star.should_not == Parser.literal('a').or(Parser.literal('b'))
+      star.should_not == Parser.literal('a').then(Parser.literal('b'))
+      star.should_not == ReductionParser.new(Parser.literal('a'), Identity.new)
     end
   end
 
