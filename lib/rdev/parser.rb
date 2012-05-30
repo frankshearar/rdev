@@ -2,6 +2,12 @@ require 'rdev/fixed-point'
 require 'rdev/memoize'
 require 'set'
 
+class Set
+  def singleton?
+    size == 1
+  end
+end
+
 module DerParser
   class Parser
     # Forward declaration
