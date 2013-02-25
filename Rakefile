@@ -2,6 +2,8 @@ require 'rake'
 require 'rspec/core/rake_task'
 require 'rake/clean'
 
+task :default => :test
+
 desc "Run all unit tests"
 RSpec::Core::RakeTask.new('test') { |t|
   t.rspec_opts = ["-c"]

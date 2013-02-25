@@ -176,6 +176,8 @@ module DerParser
           false
         elsif x.token_parser?
           false
+        elsif x.kind_of?(NullableParser)
+          if x.parser
         elsif x.union?
           empty?(x.left) and empty?(x.right)
         elsif x.sequence?
@@ -184,16 +186,19 @@ module DerParser
           empty?(x.parser)
         elsif x.star?
           empty?(x.parser) or x.parser.nullable?
-          true
         else
           raise Unimplemented.new("empty? not defined for #{parser.class.name}")
         end
       }
     end
 
+    # Does parser ONLY accept the empty string?
+    def nullp
+      self.parse_null.singleton?
+    end
+
     # Does parser accept the empty string?
     def nullable?(parser = self)
-#      NullableParser.new(parser)
       LeastFixedPoint.run(parser, false) { |x|
         if x.empty_parser?
           false
@@ -248,18 +253,21 @@ module DerParser
     end
 
     def parse(input_stream, compact = Identity.new, steps = false, debug = false)
-      puts("debug: #{self.class.name}") if debug
+      puts("parse(#{self.class.name})") if debug
 
       if (steps or steps == 0) then return self end
       if not input_stream.next? then
-        puts("debug: no more input for #{self.class.name}")
+        puts("no more input for #{self.class.name}") if debug
+        puts self.inspect if debug
         return self.parse_null
       end
 
       c = input_stream.next
       rest = input_stream.remaining
       dl_dc = self.derive(c)
+      puts "precompact: " + dl_dc.inspect
       l_prime = dl_dc.compact
+      puts "compacted:  " + l_prime.inspect
 
       l_prime.parse(input_stream.remaining,
                     compact,
@@ -269,25 +277,38 @@ module DerParser
 
     def parse_null(parser = self)
       empty_set = Set.new
-      LeastFixedPoint.run(parser, empty_set) { |x|
-        if parser.empty? then
-          empty_set
-        elsif parser.eps_prime? then
+      r = LeastFixedPoint.run(parser, empty_set) { |x|
+        if parser.eps_prime? then
+          puts "parse_null eps_prime?"
           parser.parse_trees
+        elsif parser.empty? then
+          puts "parse_null empty?"
+          empty_set
         elsif parser.eps? then
-          Set[]
+          puts "parse_null eps?"
+          empty_set
+        elsif parser.kind_of?(NullableParser) then
+          parse_null(parser.parser)
         elsif parser.token_parser? then
+          puts "parse_null token_parser?"
           empty_set
         elsif parser.union? then
+          puts "parse_null union?"
           parse_null(parser.left).merge(parse_null(parser.right))
         elsif parser.sequence? then
-          parse_null(parser.first).zip.parse_null(parser.second)
+          puts "parse_null sequence?"
+          Set.new(parse_null(parser.first).zip(parse_null(parser.second)))
         elsif parser.reducer? then
-          parse_null(parser.parser).collect {|t|
+          puts "parse_null reducer?"
+          Set.new(parse_null(parser.parser).collect {|t|
             parser.reducer.call(t)
-          }
+          })
+        elsif parser.star? then
+          Set[[]]
         end
       }
+      puts "#{parser.class.name} returning #{r.inspect}"
+      r
     end
 
     private
@@ -360,6 +381,10 @@ module DerParser
     def star?
       true
     end
+
+    def derive(input_token)
+      parser.derive(input_token).then(self)
+    end
   end
 
   class SequenceParser < Parser
@@ -417,7 +442,7 @@ module DerParser
     end
 
     def derive(input_token)
-      @parser.derive(input_token)
+      ReductionParser.new(@parser.derive(input_token), @reducer)
     end
   end
 
@@ -570,7 +595,9 @@ module DerParser
     end
 
     def call(input)
-      @seed + [input]
+      r = @seed + [input]
+      puts "Cat returning #{r.inspect}"
+      r
     end
   end
 
@@ -589,6 +616,7 @@ module DerParser
     end
 
     def call(parser)
+      puts "compacting a #{parser.inspect}"
       if parser.empty_parser?
         parser
       elsif parser.eps?
@@ -598,14 +626,17 @@ module DerParser
         # but a *-parser will be empty? if its language is;
         # this clause would otherwise not be reachable.
         if parser.parser.empty?
+          puts "### EMPTY"
           EpsilonPrimeParser.new(Set[])
         else
+          puts "### NOT EMPTY"
           RepetitionParser.new(parser.parser.compact)
         end
       elsif parser.empty?
         Parser.empty
-      elsif parser.nullable?
-        EpsilonPrimeParser.new(parser.parse_null)
+#      elsif parser.nullp
+#        puts "thinks it's nullp"
+#        EpsilonPrimeParser.new(parser.parse_null)
       elsif parser.token_parser?
         parser
       elsif parser.union? 
@@ -618,17 +649,20 @@ module DerParser
         end
       elsif parser.sequence?
         if parser.first.nullable?
+          puts "### 1"
           ReductionParser.new(compact(parser.second), Cat.new(parser.first))
         elsif parser.second.nullable?
+          puts "### 2"
           ReductionParser.new(compact(parser.first), HeadCat.new(parser.second))
         else
+          puts "### 3"
           compact(parser.first).then(compact(parser.second))
         end
       elsif parser.reducer?
         if parser.parser.empty?
           Parser.empty
         elsif parser.parser.nullable?
-          EpsilonPrimeParser.new(parser.parser.parse_null.collect {|t| parser.reducer.call(t)})
+          EpsilonPrimeParser.new(Set.new(parser.parser.parse_null.collect {|t| parser.reducer.call(t)}))
         elsif parser.parser.sequence? and parser.parser.first.nullable?
           ReductionParser.new(compact(parser.parser.second), Cat.new(parser.parser.first))
         elsif parser.parser.reducer?

@@ -589,16 +589,21 @@ module DerParser
       language.derive('a').should == b.derive('a').or(nullable.derive('a').then(b))
     end
 
-    it "D_c(reduction(A)) == D_c(A)" do
+    it "D_c(reduction(A)) == reduction(D_c(A))" do
       a = Parser.literal('bar')
-      red = ReductionParser.new(a, ->x{x})
-      red.derive('a').should == a.derive('a')
-      red.derive('bar').should == a.derive('bar')
+      red = ReductionParser.new(a, Identity.new)
+      red.derive('a').should == ReductionParser.new(a.derive('a'), Identity.new)
+      red.derive('bar').should == ReductionParser.new(a.derive('bar'), Identity.new)
     end
 
     it "D_c(delegate(p)) == D_c(p)" do
       p = Parser.literal('foo')
       DelegateParser.new(p).derive('f').should == p.derive('f')
+    end
+
+    it "D_c(star(A)) = D_c(A) then A" do
+      p = Parser.literal('a')
+      p.star.derive('c').should == p.derive('c').then(p)
     end
 
     # it "D_c(A not) == D_c(A) not" do
