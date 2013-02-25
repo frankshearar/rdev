@@ -178,16 +178,17 @@ module DerParser
           false
         elsif x.kind_of?(NullableParser)
           if x.parser
-        elsif x.union?
-          empty?(x.left) and empty?(x.right)
-        elsif x.sequence?
-          empty?(x.first) or empty?(x.second)
-        elsif x.reducer?
-          empty?(x.parser)
-        elsif x.star?
-          empty?(x.parser) or x.parser.nullable?
-        else
-          raise Unimplemented.new("empty? not defined for #{parser.class.name}")
+          elsif x.union?
+            empty?(x.left) and empty?(x.right)
+          elsif x.sequence?
+            empty?(x.first) or empty?(x.second)
+          elsif x.reducer?
+            empty?(x.parser)
+          elsif x.star?
+            empty?(x.parser) or x.parser.nullable?
+          else
+            raise Unimplemented.new("empty? not defined for #{parser.class.name}")
+          end
         end
       }
     end
@@ -326,7 +327,7 @@ module DerParser
   # if it can.
   class NullableParser < Parser
     attr_reader :parser
-
+    
     def initialize(parser)
       @parser = parser
     end
